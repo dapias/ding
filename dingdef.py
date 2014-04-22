@@ -88,15 +88,38 @@ class ReglasColision(object):
       f_vieja = oscilador_j.fase
    
       h = v_vieja**2 + (a_vieja**2*oscilador_j.omega**2)/2*(1 - np.cos(2*(oscilador_j.omega*delta_t + f_vieja)))
-   
+      
+      
       particula_i.v = a_vieja*np.cos(oscilador_j.omega*delta_t + f_vieja)
+      
+      #La amplitud siempre va a ser positiva
       oscilador_j.a = np.sqrt(h)/oscilador_j.omega
    
       
-      if oscilador_j.x < oscilador_j.equilibrio:
-          oscilador_j.fase = -np.arccos(v_vieja/np.sqrt(h))
-      else:
-       oscilador_j.fase = np.arccos(v_vieja/np.sqrt(h))
+      if oscilador_j.x < oscilador_j.equilibrio :
+          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+          
+      elif oscilador_j.x > oscilador_j.equilibrio :
+          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+      
+      
+#      if oscilador_j.x < oscilador_j.equilibrio:
+#          oscilador_j.fase = -np.arccos(v_vieja/np.sqrt(h))
+#      else:
+#       oscilador_j.fase = np.arccos(v_vieja/np.sqrt(h))
+#      
+#      if abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
+#          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+#          
+#      elif abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
+#          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+#      
+#      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
+#          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+#          
+#     
+#      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
+#          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
        
 
    def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-6, n = 100., tiempo_inicial = 0.01, tol2 = 1e-4):
@@ -490,10 +513,10 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
 
     return particulas_y_osciladores
 
-#particula1 = Particula_libre(15, -1, 1)
+#particula1 = Particula_libre(-15, 1, -1)
 #oscilador = Oscilador(0,1,0) 
 #particula1 = Particula_libre(-15, np.random.uniform(0,1), -1)
-#particula2 = Particula_libre(15, np.random.uniform(0,1), 1)
+#particula2 = Particula_libre(15, -1, 1)
 #oscilador = Oscilador(0,np.random.uniform(0,1),0) 
 #particula1 = Particula_libre(1.00571323656,-0.333427537713,-1)
 #oscilador = Oscilador(0,1.22534027544,0.962744099447)
@@ -507,6 +530,7 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
 #lista.append(particula2)
 
 
+np.random.seed(343)
 
 num_total = 3
 reservorio = Reservorio()
@@ -550,11 +574,11 @@ def plot_datos(sim, total_particulas, omega):
             t += dt
 
     
-
+ 
     for j in xrange(int(num_particulas)):
-        plt.plot(tiempo, px[j])
+        plt.plot(tiempo, px[j],'-o')
     for j in xrange(int(num_osciladores)):
-        plt.plot(tiempo, osx[j])
+        plt.plot(tiempo, osx[j], '-o')
     
     #plt.axis([0,25,-2,2])
     plt.xlabel('t')
@@ -564,5 +588,6 @@ def plot_datos(sim, total_particulas, omega):
 
 #    
 plot_datos(sim, num_total, 1)
+
 
 #print sim.t_eventos
