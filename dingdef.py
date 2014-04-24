@@ -38,17 +38,9 @@ class Particula_libre(object):
     def __init__(self,x,v,etiqueta = 0):            
        self.x = x
        self.v = v
-#       self.extrema = extrema
        self.tiempos_eventos = []
        self.etiqueta = etiqueta
        
-#       if extrema:
-#           if self.x < 0:
-#                self.etiqueta = -1
-#           else:
-#               self.etiqueta = 1
-           
-           
     def __repr__(self):
         return "Partícula(%s,%s)"%(self.x,self.v)
         
@@ -87,39 +79,42 @@ class ReglasColision(object):
       a_vieja = oscilador_j.a
       f_vieja = oscilador_j.fase
    
-      h = v_vieja**2 + (a_vieja**2*oscilador_j.omega**2)/2*(1 - np.cos(2*(oscilador_j.omega*delta_t + f_vieja)))
+      h = v_vieja**2 + (a_vieja**2*oscilador_j.omega**2)/2.*(1. - np.cos(2.*(oscilador_j.omega*delta_t + f_vieja)))
+      
+#      print "v", v_vieja, "a", a_vieja, "f", f_vieja
+#      print "h en la función colisión", h, np.sqrt(h)
       
       
-      particula_i.v = a_vieja*np.cos(oscilador_j.omega*delta_t + f_vieja)
+      particula_i.v = (a_vieja*np.cos(oscilador_j.omega*delta_t + f_vieja))
       
       #La amplitud siempre va a ser positiva
       oscilador_j.a = np.sqrt(h)/oscilador_j.omega
    
       
-      if oscilador_j.x < oscilador_j.equilibrio :
+#      if oscilador_j.x < oscilador_j.equilibrio :
+#          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+#          
+#      elif oscilador_j.x > oscilador_j.equilibrio :
+#          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+      
+      
+      if oscilador_j.x < oscilador_j.equilibrio:
+          oscilador_j.fase = -abs(np.arccos(v_vieja/np.sqrt(h)))
+      else:
+          oscilador_j.fase = abs(np.arccos(v_vieja/np.sqrt(h)))
+      
+      if abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
           oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
           
-      elif oscilador_j.x > oscilador_j.equilibrio :
+      elif abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
           oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
       
-      
-#      if oscilador_j.x < oscilador_j.equilibrio:
-#          oscilador_j.fase = -np.arccos(v_vieja/np.sqrt(h))
-#      else:
-#       oscilador_j.fase = np.arccos(v_vieja/np.sqrt(h))
-#      
-#      if abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
-#          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
-#          
-#      elif abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
-#          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
-#      
-#      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
-#          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
-#          
-#     
-#      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
-#          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
+          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+          
+     
+      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
+          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
        
 
    def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-6, n = 100., tiempo_inicial = 0.01, tol2 = 1e-4):
@@ -309,9 +304,15 @@ class Simulacion(object):
 
 #        print "particula.tiempos_eventos:", particula.tiempos_eventos
         
+#        print "Eventos:", self.eventos
+        
         for tiempo in particula.tiempos_eventos:
             if tiempo in self.eventos:
                 del self.eventos[tiempo]
+        
+#        print "Eventos:", self.eventos
+
+#        self.eventos = {}
 
         particula.tiempos_eventos = []
         
@@ -489,7 +490,7 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
     for i in xrange(num_particulas_y_osciladores):
         #Si son partículas
         if i % 2 == 0:
-            x = -tamano_caja + (2*tamano_caja)*(i+1)/(num_particulas_y_osciladores+1.)
+            x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
            
             if i == 0:
                 v = reservorio.velocidad()
@@ -504,33 +505,33 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
                 
         else:
             x_eq = -tamano_caja + (2*tamano_caja)*(i+1)/(num_particulas_y_osciladores+1.)
-            A = 1
-            Fase = 0
+            A = 1.
+            Fase = 0.
             nueva_particula = Oscilador(x_eq,A,Fase,omega)
             
             
         particulas_y_osciladores.append(nueva_particula)
+        
+    print particulas_y_osciladores
 
     return particulas_y_osciladores
-
-#particula1 = Particula_libre(-15, 1, -1)
-#oscilador = Oscilador(0,1,0) 
+##
+#particula1 = Particula_libre(-7.5,0.558648785935, -1)
+#oscilador = Oscilador(0.,1., 0.) 
+#particula2 = Particula_libre(7.5,-2.88237690475, 1)
 #particula1 = Particula_libre(-15, np.random.uniform(0,1), -1)
-#particula2 = Particula_libre(15, -1, 1)
 #oscilador = Oscilador(0,np.random.uniform(0,1),0) 
 #particula1 = Particula_libre(1.00571323656,-0.333427537713,-1)
 #oscilador = Oscilador(0,1.22534027544,0.962744099447)
 
 
 #lista = []
-#lista.append(oscilador)
 #lista.append(particula1)
 #lista.append(oscilador)
 #lista.append(particula2)
-#lista.append(particula2)
 
 
-np.random.seed(343)
+#np.random.seed(343)
 
 num_total = 3
 reservorio = Reservorio()
@@ -543,17 +544,34 @@ sim.run(15)
 
 def plot_datos(sim, total_particulas, omega):
     tiempo = []
+    tiempo_exacto = []
     num_particulas = (total_particulas - 1) * 0.5 + 1
 #    num_particulas = 1
     num_osciladores = (total_particulas - 1) * 0.5
     num_osciladores = 1
     px = [[] for _ in xrange(int(num_particulas))]
     osx = [[] for _ in xrange(int(num_osciladores))]
-   
-   
+    
+    px_exacto = [[] for _ in xrange(int(num_particulas))]
+    osx_exacto = [[] for _ in xrange(int(num_osciladores))]
+    
+    for i in xrange(len(sim.t_eventos)-1):
+        for j in xrange(int(num_particulas)):
+            px_exacto[j].append(sim.registro_posiciones["Particula" + str(j + 1)][i])
+        for j in xrange(int(num_osciladores)):
+            osx_exacto[j].append(sim.registro_amplitudes["Oscilador" +  str(j + 1) ][i]*np.sin(np.float(sim.registro_fases["Oscilador" +  str(j + 1)][i])) + sim.osciladores[j].equilibrio)
+            
+        tiempo_exacto.append(sim.t_eventos[i])
+  
+    for j in xrange(int(num_particulas)):
+        plt.plot(tiempo_exacto, px_exacto[j],'go')
+    for j in xrange(int(num_osciladores)):
+        plt.plot(tiempo_exacto, osx_exacto[j], 'ro')
 
     t = 0        
     dt = 0.05
+    
+
 
     for i in xrange(len(sim.t_eventos) - 1):
     
@@ -572,13 +590,17 @@ def plot_datos(sim, total_particulas, omega):
 
             tiempo.append(t)
             t += dt
+        
+
+
+                
 
     
  
     for j in xrange(int(num_particulas)):
-        plt.plot(tiempo, px[j],'-o')
+        plt.plot(tiempo, px[j])
     for j in xrange(int(num_osciladores)):
-        plt.plot(tiempo, osx[j], '-o')
+        plt.plot(tiempo, osx[j])
     
     #plt.axis([0,25,-2,2])
     plt.xlabel('t')
@@ -589,5 +611,13 @@ def plot_datos(sim, total_particulas, omega):
 #    
 plot_datos(sim, num_total, 1)
 
+#def cual_lista(aleatoria = 1):
+#    if aleatoria == 1:
+#        lista = crear_particulas_aleatorias(caja.tamano,num_total,1,reservorio)
+#    else:
+        
 
-#print sim.t_eventos
+        
+
+
+#print sim.eventos
