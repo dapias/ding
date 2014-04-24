@@ -6,6 +6,7 @@ Created on Fri Apr 18 11:38:56 2014
 """
 
 import numpy as np
+import random
 from matplotlib import pyplot as plt
 
 
@@ -49,7 +50,7 @@ class Particula_libre(object):
     
 class Reservorio(object):
     
-    def __init__(self, temperatura = 2, deltaT = 2, sentido = 0):
+    def __init__(self, temperatura = 2.5, deltaT = 1, sentido = 0):
         self.sentido = sentido
         self.temperatura = temperatura
         self.deltaT = deltaT
@@ -59,7 +60,7 @@ class Reservorio(object):
         if self.sentido == 0:
             vel = (np.sqrt(-np.log(1-i)*2*self.temperatura))
         if self.sentido == 1 or j==1:
-            vel = -(np.sqrt(-np.log(1-i)*2*(self.temperatura+self.deltaT)))
+            vel = -(np.sqrt(-np.log(1-i)*2*(self.temperatura-self.deltaT)))
         return vel
         
 class Caja(object):
@@ -191,54 +192,60 @@ class ReglasColision(object):
                     delta_t = delta_t*0.5
                     h = -h  
             
-#            if v_p == 0:
-#                g = abs((x_p0 - eq_o)/a_o)
-#            
-#                if g >= 1:
-#                    t = float('inf')
-#                else:
-#                    if eq_o > x_p0:
-#                        delta_t = abs((a_o + eq_o - x_p0)/(a_o*w*n))
-#                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
-#                        x_p = x_p0
-#                
-#                        g = sign(x_p - x_o)
-#                        h = sign(x_p - x_o)
-#                
-#                        while 1:
-#                            while g == h:
-#                                t += delta_t
-#                                x_p = x_p0 
-#                                x_o = a_o*np.sin(w*t + f_o )  + eq_o
-#                                h = sign(x_p - x_o)
-#                    
-#                            if abs(x_p0 - x_o) < tol:
-#                                break
-#                    
-#                            t = t - delta_t
-#                            delta_t = delta_t*0.5
-#                            h = -h  
-#                        
-#                    if eq_o < x_p0:
-#                        delta_t = abs((-a_o + eq_o - x_p0)/(a_o*w*n))
-#                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
-#                        x_p = x_p0
-#                        g = sign(x_p - x_o)
-#                        h = sign(x_p - x_o)
-#                        while 1:
-#                            while g == h:
-#                                t += delta_t
-#                                x_p = x_p0 
-#                                x_o = a_o*np.sin(w*t + f_o )  + eq_o
-#                                h = sign(x_p - x_o)
-#                                
-#                            if abs(x_p0 - x_o) < tol:
-#                                break
-#                            t = t - delta_t
-#                            delta_t = delta_t*0.5
-#                            h = -h  
-            if t < tol2:
-                t = float('inf')
+            if v_p == 0.:
+                g = abs((x_p0 - eq_o)/a_o)
+            
+# El igual no es una condición tan física.
+                
+                if g >= 1.:
+                    t = float('inf')
+                else:
+                    if eq_o > x_p0:
+                        delta_t = abs((a_o + eq_o - x_p0)/(a_o*w*n))
+                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
+                        x_p = x_p0
+                
+                        g = sign(x_p - x_o)
+                        h = sign(x_p - x_o)
+                
+                        while 1:
+                            while g == h:
+                                t += delta_t
+                                x_p = x_p0 
+                                x_o = a_o*np.sin(w*t + f_o )  + eq_o
+                                h = sign(x_p - x_o)
+                    
+                            if abs(x_p0 - x_o) < tol:
+                                break
+                    
+                            t = t - delta_t
+                            delta_t = delta_t*0.5
+                            h = -h  
+                        
+                    if eq_o < x_p0:
+                        delta_t = abs((-a_o + eq_o - x_p0)/(a_o*w*n))
+                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
+                        x_p = x_p0
+                        g = sign(x_p - x_o)
+                        h = sign(x_p - x_o)
+                        while 1:
+                            while g == h:
+                                t += delta_t
+                                x_p = x_p0 
+                                x_o = a_o*np.sin(w*t + f_o )  + eq_o
+                                h = sign(x_p - x_o)
+                                
+                            if abs(x_p0 - x_o) < tol:
+                                break
+                            t = t - delta_t
+                            delta_t = delta_t*0.5
+                            h = -h  
+                            
+                
+
+#Esto serviría parcialmente para evitar que las partículas choquen dos veces seguidas                            
+#            if t < tol2:
+#                t = float('inf')
                   
             return t
   
@@ -493,20 +500,20 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
             x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
            
             if i == 0:
-                v = reservorio.velocidad()
+                v = (random.choice([1.,-1.]))*reservorio.velocidad()
                 nueva_particula = Particula_libre(x, v, -1)
             elif i == num_particulas_y_osciladores-1:
 #                reservorio.sentido == 1
-                v = reservorio.velocidad(1)
+                v = (random.choice([1.,-1.]))*reservorio.velocidad(1)
                 nueva_particula = Particula_libre(x, v, 1)
             else:
-                v = np.random.uniform(-0.001, 0.001)
+                v = np.random.uniform(-reservorio.velocidad(1),reservorio.velocidad())
                 nueva_particula = Particula_libre(x, v)
                 
         else:
-            x_eq = -tamano_caja + (2*tamano_caja)*(i+1)/(num_particulas_y_osciladores+1.)
-            A = 1.
-            Fase = 0.
+            x_eq = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
+            A = np.random.uniform(tamano_caja/(2.*(num_particulas_y_osciladores+1.)))
+            Fase = np.random.uniform(0,np.pi)
             nueva_particula = Oscilador(x_eq,A,Fase,omega)
             
             
@@ -533,40 +540,41 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
 
 #np.random.seed(343)
 
-num_total = 3
+frecuencia = 0.5
+num_total = 7
 reservorio = Reservorio()
-caja = Caja(15)
-lista = crear_particulas_aleatorias(caja.tamano,num_total,1,reservorio)
+caja = Caja(15.)
+lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
-sim.run(15)
+sim.run(20)
 
 
-def plot_datos(sim, total_particulas, omega):
+def plot_datos(sim, total_particulas, omega, puntos = 1):
     tiempo = []
-    tiempo_exacto = []
     num_particulas = (total_particulas - 1) * 0.5 + 1
 #    num_particulas = 1
     num_osciladores = (total_particulas - 1) * 0.5
-    num_osciladores = 1
     px = [[] for _ in xrange(int(num_particulas))]
     osx = [[] for _ in xrange(int(num_osciladores))]
     
-    px_exacto = [[] for _ in xrange(int(num_particulas))]
-    osx_exacto = [[] for _ in xrange(int(num_osciladores))]
-    
-    for i in xrange(len(sim.t_eventos)-1):
+    if puntos == 1:
+        tiempo_exacto = []
+        px_exacto = [[] for _ in xrange(int(num_particulas))]
+        osx_exacto = [[] for _ in xrange(int(num_osciladores))]
+        
+        for i in xrange(len(sim.t_eventos)-1):
+            for j in xrange(int(num_particulas)):
+                px_exacto[j].append(sim.registro_posiciones["Particula" + str(j + 1)][i])
+            for j in xrange(int(num_osciladores)):
+                osx_exacto[j].append(sim.registro_amplitudes["Oscilador" +  str(j + 1) ][i]*np.sin(np.float(sim.registro_fases["Oscilador" +  str(j + 1)][i])) + sim.osciladores[j].equilibrio)
+                
+            tiempo_exacto.append(sim.t_eventos[i])
+      
         for j in xrange(int(num_particulas)):
-            px_exacto[j].append(sim.registro_posiciones["Particula" + str(j + 1)][i])
+            plt.plot(tiempo_exacto, px_exacto[j],'o')
         for j in xrange(int(num_osciladores)):
-            osx_exacto[j].append(sim.registro_amplitudes["Oscilador" +  str(j + 1) ][i]*np.sin(np.float(sim.registro_fases["Oscilador" +  str(j + 1)][i])) + sim.osciladores[j].equilibrio)
-            
-        tiempo_exacto.append(sim.t_eventos[i])
-  
-    for j in xrange(int(num_particulas)):
-        plt.plot(tiempo_exacto, px_exacto[j],'go')
-    for j in xrange(int(num_osciladores)):
-        plt.plot(tiempo_exacto, osx_exacto[j], 'ro')
+            plt.plot(tiempo_exacto, osx_exacto[j], 'o')
 
     t = 0        
     dt = 0.05
@@ -609,7 +617,7 @@ def plot_datos(sim, total_particulas, omega):
 
 
 #    
-plot_datos(sim, num_total, 1)
+plot_datos(sim, num_total, frecuencia, 1)
 
 #def cual_lista(aleatoria = 1):
 #    if aleatoria == 1:
