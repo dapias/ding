@@ -21,6 +21,8 @@ class Oscilador(object):
         self.omega = omega
         self.equilibrio = equilibrio
         self.x = equilibrio
+        self.tiempos_colisiones = [0.]
+#        self.posiciones = [self.a*np.sin(self.fase) + self.equilibrio]
 #        self.tiempos_eventos = [0.]
         
 
@@ -40,8 +42,9 @@ class Particula_libre(object):
        self.x = x
        self.v = v
        self.tiempos_eventos = []
+       self.tiempos_colisiones = [0.]
        self.etiqueta = etiqueta
-       
+       self.velocidades_colisiones = [v]
     def __repr__(self):
         return "Partícula(%s,%s)"%(self.x,self.v)
         
@@ -334,7 +337,7 @@ class Simulacion(object):
             
             dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[1])    
             
-            print "DeltaTiempo colisión con oscilador", dt
+#            print "DeltaTiempo colisión con oscilador", dt
             
             if dt < float('inf'):
 
@@ -343,7 +346,7 @@ class Simulacion(object):
                     particula.tiempos_eventos.append(tiempo_col)
             
             dt = self.reglas_colision.tiempo_colision_pared(particula)
-            print "DeltaTiempo colisión con pared", dt
+#            print "DeltaTiempo colisión con pared", dt
             
             if dt < float('inf'):
                 tiempo_col = self.tiempo + dt
@@ -351,14 +354,13 @@ class Simulacion(object):
                 particula.tiempos_eventos.append(tiempo_col)
             
             
-          
-#                self.particulas_y_osciladores[indice + 1].tiempos_eventos.append(tiempo_col)
+#                self.particulas_y_osciladores[0].tiempos_colisiones.append(tiempo_col)
                   
         elif particula.etiqueta == 1:
             
             dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[-2])    
             
-            print "DeltaTiempo colisión con oscilador", dt
+#            print "DeltaTiempo colisión con oscilador", dt
             
             if dt < float('inf'):
 
@@ -367,7 +369,7 @@ class Simulacion(object):
                     particula.tiempos_eventos.append(tiempo_col)
             
             dt = self.reglas_colision.tiempo_colision_pared(particula)
-            print "DeltaTiempo colisión con pared", dt
+#            print "DeltaTiempo colisión con pared", dt
             
             if dt < float('inf'):
                 tiempo_col = self.tiempo + dt
@@ -381,7 +383,7 @@ class Simulacion(object):
                         
             dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[indice - 1])    
             
-            print "DeltaTiempo colisión con el oscilador del lado izquierdo", dt
+#            print "DeltaTiempo colisión con el oscilador del lado izquierdo", dt
             
             if dt < float('inf'):
 
@@ -391,7 +393,7 @@ class Simulacion(object):
                     
             dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[indice + 1])    
             
-            print "DeltaTiempo colisión con el oscilador del lado derecho", dt
+#            print "DeltaTiempo colisión con el oscilador del lado derecho", dt
             
             if dt < float('inf'):
 
@@ -421,7 +423,7 @@ class Simulacion(object):
                     pass
         
 
-    def run(self, steps=10):
+    def run(self, steps=10, imprimir = 0 ):
         
         
         self.registro_posiciones = {"Particula" + str(i + 1) : np.ones(steps) for i in range(int(self.longpart))}
@@ -466,6 +468,11 @@ class Simulacion(object):
                 self.reglas_colision.colision_pared(siguiente_evento[0])
 #                print self.particulas_y_osciladores[0].etiqueta
 #                self.actualizar(siguiente_evento[0])
+
+#Para poder calcular los flujos.
+
+                self.particulas_y_osciladores[self.particulas_y_osciladores.index(siguiente_evento[0])].tiempos_colisiones.append(t_siguiente_evento)
+                self.particulas_y_osciladores[self.particulas_y_osciladores.index(siguiente_evento[0])].velocidades_colisiones.append(siguiente_evento[0].v)
                 
 
 # Si chocan la particula y el oscilador
@@ -481,12 +488,17 @@ class Simulacion(object):
                 self.actualizar_fases(delta_t, siguiente_evento[1])
                 self.reglas_colision.colision_particula_oscilador(siguiente_evento[0], siguiente_evento[1],np.float(delta_t))
                 
-#                self.particulas_y_osciladores[self.particulas_y_osciladores.index(siguiente_evento[1])].tiempos_eventos.append(t_siguiente_evento)
+#Para poder calcular los flujos                
+                self.particulas_y_osciladores[self.particulas_y_osciladores.index(siguiente_evento[1])].tiempos_colisiones.append(t_siguiente_evento)
+                self.particulas_y_osciladores[self.particulas_y_osciladores.index(siguiente_evento[0])].tiempos_colisiones.append(t_siguiente_evento)
+                self.particulas_y_osciladores[self.particulas_y_osciladores.index(siguiente_evento[0])].velocidades_colisiones.append(siguiente_evento[0].v)
 #                self.actualizar_particulas() 
         
         
             self.t_eventos.append(self.tiempo) 
-            print i + 1,  self.tiempo, self.particulas_y_osciladores
+            
+            if imprimir == 1:
+                print i + 1,  self.tiempo, self.particulas_y_osciladores
             
 
 def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega, reservorio):
@@ -540,14 +552,14 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
 
 #np.random.seed(343)
 
-frecuencia = 0.5
-num_total = 7
-reservorio = Reservorio()
-caja = Caja(15.)
-lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
-reglas = ReglasColision(caja, reservorio)
-sim = Simulacion(lista, reglas)
-sim.run(20)
+#frecuencia = 1
+#num_total = 7
+#reservorio = Reservorio()
+#caja = Caja(15.)
+#lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
+#reglas = ReglasColision(caja, reservorio)
+#sim = Simulacion(lista, reglas)
+#sim.run(50)
 
 
 def plot_datos(sim, total_particulas, omega, puntos = 1):
@@ -617,15 +629,11 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
 
 
 #    
-plot_datos(sim, num_total, frecuencia, 1)
+#plot_datos(sim, num_total, frecuencia, 1)
 
 #def cual_lista(aleatoria = 1):
 #    if aleatoria == 1:
 #        lista = crear_particulas_aleatorias(caja.tamano,num_total,1,reservorio)
 #    else:
         
-
-        
-
-
 #print sim.eventos
