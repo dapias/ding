@@ -15,7 +15,7 @@ def sign(number):return cmp(number,0)
 class Oscilador(object):
     """clase Oscilador que recibe amplitud, fase, frecuencia y posición inicial"""
 
-    def __init__(self, equilibrio, amplitud, fase, omega = 1.):
+    def __init__(self, equilibrio, amplitud, fase, omega):
         self.a = amplitud
         self.fase = fase
         self.omega = omega
@@ -27,7 +27,7 @@ class Oscilador(object):
         
 
     def __repr__(self):
-        return "Oscilador(%s,%s,%s)"%(self.x,self.a,self.fase)
+        return "Oscilador(%s,%s,%s,%s)"%(self.x,self.a,self.fase,self.omega)
         
 
     def movimiento(self,delta_t):
@@ -67,41 +67,86 @@ class Reservorio(object):
         return vel
         
 class Caja(object):
-
+    """Es la longitud de la mitad de la caja, estoy suponiendo 
+    que la extensión de la caja es de [-tamano,tamano]"""
     def __init__(self,tamano = 100):
         self.tamano = tamano
         
 class ReglasColision(object):
    
-   def __init__(self, caja = None, reservorio = None):
-        self.caja = caja if  caja else Caja()
-        self.reservorio = reservorio if reservorio else Reservorio()
+   def __init__(self, caja, reservorio):
+        self.caja = caja 
+        self.reservorio = reservorio 
         
+   def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-6, n = 100., tiempo_inicial = 1e-3):
+       
+            x_p0 = particula_i.x
+            x_p = particula_i.x
+            v_p = particula_i.v
+            x_o = oscilador_j.x
+            a_o = abs(oscilador_j.a)
+            f_o = oscilador_j.fase
+            w = oscilador_j.omega
+            eq_o = oscilador_j.equilibrio
+            
+            t = tiempo_inicial
+            
+            if v_p < 0:
+                delta_t = abs((-a_o + eq_o - x_p0)/(v_p*n))
+            elif v_p >0:
+                delta_t = abs((a_o + eq_o - x_p0)/(v_p*n))
+            else:
+               g = abs((x_p0 - eq_o)/a_o)
+               #El igual a 1 no es una condición física, pero sí, bastante improbable.
+               if g >= 1.:
+                    t = float('inf')
+                    return t
+               else:
+                   delta_t = abs((eq_o - x_p0)/(a_o*w*n))
+            
+           
+            x_p = x_p0 + t*v_p
+            x_o = a_o*np.sin(w*t + f_o )  + eq_o
+            
+            g = sign(x_p - x_o)
+            h = sign(x_p - x_o)
+                
+                
+            while 1:
+                while g == h:
+                    t += delta_t
+                    x_p = x_p0 + t*v_p
+                    x_o = a_o*np.sin(w*t + f_o )  + eq_o
+#                        print t, x_p, x_o
+                    h = sign(x_p - x_o)
+                    
+                    if abs(x_p) > self.caja.tamano:
+                        t = float('inf')
+                        return t
+
+                if abs(x_p - x_o) < tol:
+                    break
+                
+                t = t - delta_t
+                delta_t = delta_t*0.5
+                h = -h  
+            return t    
+            
    def colision_particula_oscilador(self, particula_i,oscilador_j,delta_t):
    # Actualiza velocidades, amplitudes y fases.
       v_vieja = particula_i.v
       a_vieja = oscilador_j.a
       f_vieja = oscilador_j.fase
+      w = oscilador_j.omega
    
       h = v_vieja**2 + (a_vieja**2*oscilador_j.omega**2)/2.*(1. - np.cos(2.*(oscilador_j.omega*delta_t + f_vieja)))
       
-#      print "v", v_vieja, "a", a_vieja, "f", f_vieja
-#      print "h en la función colisión", h, np.sqrt(h)
-      
-      
-      particula_i.v = (a_vieja*np.cos(oscilador_j.omega*delta_t + f_vieja))
+#      particula_i.v = (a_vieja*np.cos(oscilador_j.omega*delta_t + f_vieja))
+
       
       #La amplitud siempre va a ser positiva
       oscilador_j.a = np.sqrt(h)/oscilador_j.omega
    
-      
-#      if oscilador_j.x < oscilador_j.equilibrio :
-#          oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
-#          
-#      elif oscilador_j.x > oscilador_j.equilibrio :
-#          oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
-      
-      
       if oscilador_j.x < oscilador_j.equilibrio:
           oscilador_j.fase = -abs(np.arccos(v_vieja/np.sqrt(h)))
       else:
@@ -119,138 +164,11 @@ class ReglasColision(object):
      
       elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
           oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
+         
+      particula_i.v = v_vieja + a_vieja*w*np.cos(w*delta_t + f_vieja)  - oscilador_j.a*w*np.cos(oscilador_j.fase)
        
 
-   def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-6, n = 100., tiempo_inicial = 0.01, tol2 = 1e-4):
-       
-            x_p0 = particula_i.x
-            x_p = particula_i.x
-            v_p = particula_i.v
-            x_o = oscilador_j.x
-            a_o = abs(oscilador_j.a)
-            f_o = oscilador_j.fase
-            w = oscilador_j.omega
-            eq_o = oscilador_j.equilibrio
-            
-            t = tiempo_inicial
-            
-            if v_p < 0:
-                delta_t = abs((-a_o + eq_o - x_p0)/(v_p*n))
-#                print delta_t, t
-                
-    
-                x_p = x_p0 + t*v_p
-                x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                
-                g = sign(x_p - x_o)
-                h = sign(x_p - x_o)
-                
-                
-                while 1:
-                    while g == h:
-                        t += delta_t
-                        x_p = x_p0 + t*v_p
-                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
-#                        print t, x_p, x_o
-                        h = sign(x_p - x_o)
-                        
-                        if abs(x_p) > self.caja.tamano:
-                            t = float('inf')
-                            return t
-
-                        
-
-                    
-                    if abs(x_p - x_o) < tol:
-                        break
-                    
-                    t = t - delta_t
-                    delta_t = delta_t*0.5
-                    h = -h  
-           
-            if v_p > 0:
-                delta_t = abs((a_o + eq_o - x_p0)/(v_p*n))
-                x_p = x_p0 + t*v_p
-                x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                
-                g = sign(x_p - x_o)
-                h = sign(x_p - x_o)
-                
-                while 1:
-                    while g == h:
-                        t += delta_t
-                        x_p = x_p0 + t*v_p
-                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                        h = sign(x_p - x_o)
-                        
-                        if abs(x_p) > self.caja.tamano:
-                            t = float('inf')
-                            return t
-
-                    
-                    if abs(x_p - x_o) < tol:
-                        break
-                    
-                    t = t - delta_t
-                    delta_t = delta_t*0.5
-                    h = -h  
-            
-            if v_p == 0.:
-                g = abs((x_p0 - eq_o)/a_o)
-            
-# El igual no es una condición tan física.
-                
-                if g >= 1.:
-                    t = float('inf')
-                else:
-                    if eq_o > x_p0:
-                        delta_t = abs((a_o + eq_o - x_p0)/(a_o*w*n))
-                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                        x_p = x_p0
-                
-                        g = sign(x_p - x_o)
-                        h = sign(x_p - x_o)
-                
-                        while 1:
-                            while g == h:
-                                t += delta_t
-                                x_p = x_p0 
-                                x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                                h = sign(x_p - x_o)
-                    
-                            if abs(x_p0 - x_o) < tol:
-                                break
-                    
-                            t = t - delta_t
-                            delta_t = delta_t*0.5
-                            h = -h  
-                        
-                    if eq_o < x_p0:
-                        delta_t = abs((-a_o + eq_o - x_p0)/(a_o*w*n))
-                        x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                        x_p = x_p0
-                        g = sign(x_p - x_o)
-                        h = sign(x_p - x_o)
-                        while 1:
-                            while g == h:
-                                t += delta_t
-                                x_p = x_p0 
-                                x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                                h = sign(x_p - x_o)
-                                
-                            if abs(x_p0 - x_o) < tol:
-                                break
-                            t = t - delta_t
-                            delta_t = delta_t*0.5
-                            h = -h  
-                            
-                
-
-#Esto serviría parcialmente para evitar que las partículas choquen dos veces seguidas                            
-#            if t < tol2:
-#                t = float('inf')
-                  
-            return t
+   
   
    def colision_pared(self, particula):
        
@@ -414,7 +332,7 @@ class Simulacion(object):
                 particula.movimiento(np.float(delta_t))
 
                 
-    def actualizar_fases(self, delta_t, oscilador_prohibido = Oscilador(0,0,0)):
+    def actualizar_fases(self, delta_t, oscilador_prohibido = Oscilador(0,0,0,0)):
         for oscilador in self.particulas_y_osciladores:
             if oscilador != oscilador_prohibido:
                 try:
@@ -534,33 +452,6 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
     print particulas_y_osciladores
 
     return particulas_y_osciladores
-##
-#particula1 = Particula_libre(-7.5,0.558648785935, -1)
-#oscilador = Oscilador(0.,1., 0.) 
-#particula2 = Particula_libre(7.5,-2.88237690475, 1)
-#particula1 = Particula_libre(-15, np.random.uniform(0,1), -1)
-#oscilador = Oscilador(0,np.random.uniform(0,1),0) 
-#particula1 = Particula_libre(1.00571323656,-0.333427537713,-1)
-#oscilador = Oscilador(0,1.22534027544,0.962744099447)
-
-
-#lista = []
-#lista.append(particula1)
-#lista.append(oscilador)
-#lista.append(particula2)
-
-
-#np.random.seed(343)
-
-#frecuencia = 1
-#num_total = 7
-#reservorio = Reservorio()
-#caja = Caja(15.)
-#lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
-#reglas = ReglasColision(caja, reservorio)
-#sim = Simulacion(lista, reglas)
-#sim.run(50)
-
 
 def plot_datos(sim, total_particulas, omega, puntos = 1):
     tiempo = []
@@ -589,7 +480,7 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
             plt.plot(tiempo_exacto, osx_exacto[j], 'o')
 
     t = 0        
-    dt = 0.05
+    dt = 0.005
     
 
 
@@ -628,12 +519,15 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
     plt.show()
 
 
-#    
-#plot_datos(sim, num_total, frecuencia, 1)
-
-#def cual_lista(aleatoria = 1):
-#    if aleatoria == 1:
-#        lista = crear_particulas_aleatorias(caja.tamano,num_total,1,reservorio)
-#    else:
-        
+if __name__ == '__main__':
+#    np.random.seed(2)
+    frecuencia = 4
+    num_total = 7
+    reservorio = Reservorio()
+    caja = Caja(15.)
+    lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
+    reglas = ReglasColision(caja, reservorio)
+    sim = Simulacion(lista, reglas)
+    sim.run(10,1)    
+    plot_datos(sim, num_total, frecuencia, 1)
 #print sim.eventos

@@ -9,7 +9,7 @@ from dingdef import crear_particulas_aleatorias, Reservorio, Caja, ReglasColisio
 import numpy as np
 
 
-frecuencia = 1.
+frecuencia = 0.5
 num_total = 7
 reservorio = Reservorio()
 caja = Caja(15.)
@@ -17,7 +17,7 @@ lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
 imprimir = 0
-sim.run(1000, imprimir)
+sim.run(10, imprimir)
 
 plot_datos(sim, num_total, frecuencia, 1)
 
@@ -67,10 +67,12 @@ for tiempo in sim.particulas_y_osciladores[-1].tiempos_colisiones:
 
 #Flujo pared izquierda - particula
 # Energía con la que llega, dividida entre el tiempo  (en este  caso, el lado izquierdo está más caliente.)
-flujos = []
-for j in xrange(int((num_total)/2) + 1):
-    flujo = 1./lista[2*j].tiempos_colisiones[px[2*j][-1]]*np.sum([lista[2*j].velocidades_colisiones[px[2*j][i + 1]]**2*0.5 - lista[2*j].velocidades_colisiones[px[2*j][i + 1] - 1]**2*0.5 for i in xrange(len(px[2*j])-1)])
-    flujos.append(flujo)
+
+#flujos = []
+#for j in xrange(int((num_total)/2) + 1):
+#    flujo = 1./lista[2*j].tiempos_colisiones[px[2*j][-1]]*np.sum([lista[2*j].velocidades_colisiones[px[2*j][i + 1]]**2*0.5 - lista[2*j].velocidades_colisiones[px[2*j][i + 1] - 1]**2*0.5 for i in xrange(len(px[2*j])-1)])
+#    flujos.append(flujo)
+
 #print flujoflujo = 1./lista[0].tiempos_colisiones[px[0][-1]]*np.sum([lista[0].velocidades_colisiones[px[0][i + 1]]**2*0.5 - lista[0].velocidades_colisiones[px[0][i + 1] - 1]**2*0.5 for i in xrange(len(px[0])-1)])
 
-print flujos
+#print flujos
