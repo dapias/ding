@@ -23,7 +23,7 @@ class Oscilador(object):
         self.x = equilibrio
         self.tiempos_colisiones = [0.]
 #        self.posiciones = [self.a*np.sin(self.fase) + self.equilibrio]
-#        self.tiempos_eventos = [0.]
+        self.tiempos_eventos = [0.]
         
 
     def __repr__(self):
@@ -225,109 +225,114 @@ class Simulacion(object):
         
     def actualizar_particulas(self):
         for particula in self.particulas_y_osciladores:
-            if isinstance(particula,Particula_libre):
-                self.actualizar(particula)
+            self.actualizar(particula)
              
     def actualizar(self, particula):
 
-#        print "particula.tiempos_eventos:", particula.tiempos_eventos
-        
-#        print "Eventos:", self.eventos
-        
         for tiempo in particula.tiempos_eventos:
             if tiempo in self.eventos:
                 del self.eventos[tiempo]
         
-#        print "Eventos:", self.eventos
-
-#        self.eventos = {}
-
         particula.tiempos_eventos = []
         
         indice = self.particulas_y_osciladores.index(particula)
-        
 
-
-        
         #Para las partículas de los extremos
         
-        if particula.etiqueta == -1:        
-            
-            dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[1])    
-            
-#            print "DeltaTiempo colisión con oscilador", dt
-            
-            if dt < float('inf'):
-
+        try:
+                
+            if particula.etiqueta == -1:        
+                
+                dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[1])    
+                
+    #            print "DeltaTiempo colisión con oscilador", dt
+                
+                if dt < float('inf'):
+    
+                        tiempo_col = self.tiempo + dt
+                        self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[1])
+                        particula.tiempos_eventos.append(tiempo_col)
+                
+                dt = self.reglas_colision.tiempo_colision_pared(particula)
+    #            print "DeltaTiempo colisión con pared", dt
+                
+                if dt < float('inf'):
                     tiempo_col = self.tiempo + dt
-                    self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[1])
+                    self.eventos[tiempo_col] = (particula, None)
+                    particula.tiempos_eventos.append(tiempo_col)
+                
+                
+    #                self.particulas_y_osciladores[0].tiempos_colisiones.append(tiempo_col)
+                      
+            elif particula.etiqueta == 1:
+                
+                dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[-2])    
+                
+    #            print "DeltaTiempo colisión con oscilador", dt
+                
+                if dt < float('inf'):
+    
+                        tiempo_col = self.tiempo + dt
+                        self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[-2])
+                        particula.tiempos_eventos.append(tiempo_col)
+                
+                dt = self.reglas_colision.tiempo_colision_pared(particula)
+    #            print "DeltaTiempo colisión con pared", dt
+    
+                if dt < float('inf'):
+                    tiempo_col = self.tiempo + dt
+                    self.eventos[tiempo_col] = (particula, None)
                     particula.tiempos_eventos.append(tiempo_col)
             
-            dt = self.reglas_colision.tiempo_colision_pared(particula)
-#            print "DeltaTiempo colisión con pared", dt
-            
-            if dt < float('inf'):
-                tiempo_col = self.tiempo + dt
-                self.eventos[tiempo_col] = (particula, None)
-                particula.tiempos_eventos.append(tiempo_col)
-            
-            
-#                self.particulas_y_osciladores[0].tiempos_colisiones.append(tiempo_col)
-                  
-        elif particula.etiqueta == 1:
-            
-            dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[-2])    
-            
-#            print "DeltaTiempo colisión con oscilador", dt
-            
-            if dt < float('inf'):
-
-                    tiempo_col = self.tiempo + dt
-                    self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[-2])
-                    particula.tiempos_eventos.append(tiempo_col)
-            
-            dt = self.reglas_colision.tiempo_colision_pared(particula)
-#            print "DeltaTiempo colisión con pared", dt
-            
-            if dt < float('inf'):
-                tiempo_col = self.tiempo + dt
-                self.eventos[tiempo_col] = (particula, None)
-                particula.tiempos_eventos.append(tiempo_col)
-            
-        
-        else:
+            else:
     
 #Sólo consideramos las partículas
+                       
+                dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[indice - 1])    
+                
+    #            print "DeltaTiempo colisión con el oscilador del lado izquierdo", dt
+                
+                if dt < float('inf'):
+    
+                        tiempo_col = self.tiempo + dt
+                        self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[indice - 1])
+                        particula.tiempos_eventos.append(tiempo_col)
                         
-            dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[indice - 1])    
-            
-#            print "DeltaTiempo colisión con el oscilador del lado izquierdo", dt
-            
+                dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[indice + 1])    
+                
+    #            print "DeltaTiempo colisión con el oscilador del lado derecho", dt
+                
+                if dt < float('inf'):
+    
+                        tiempo_col = self.tiempo + dt
+                        self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[indice + 1])
+                        particula.tiempos_eventos.append(tiempo_col)
+                
+    
+    
+    
+        except(AttributeError):
+            dt = self.reglas_colision.tiempo_colision_particula_oscilador(self.particulas_y_osciladores[indice - 1], particula)    
+                
+    #            print "DeltaTiempo colisión con el oscilador del lado izquierdo", dt
+                
             if dt < float('inf'):
-
-                    tiempo_col = self.tiempo + dt
-                    self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[indice - 1])
-                    particula.tiempos_eventos.append(tiempo_col)
-                    
-            dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[indice + 1])    
-            
-#            print "DeltaTiempo colisión con el oscilador del lado derecho", dt
-            
+                tiempo_col = self.tiempo + dt
+                self.eventos[tiempo_col] = (self.particulas_y_osciladores[indice - 1], particula)
+                particula.tiempos_eventos.append(tiempo_col)
+                        
+            dt = self.reglas_colision.tiempo_colision_particula_oscilador(self.particulas_y_osciladores[indice + 1], particula)    
+                
+    #            print "DeltaTiempo colisión con el oscilador del lado derecho", dt
             if dt < float('inf'):
-
-                    tiempo_col = self.tiempo + dt
-                    self.eventos[tiempo_col] = (particula, self.particulas_y_osciladores[indice + 1])
-                    particula.tiempos_eventos.append(tiempo_col)
-                
-         
-               
-                
-                
-                
+                tiempo_col = self.tiempo + dt
+                self.eventos[tiempo_col] = (self.particulas_y_osciladores[indice + 1], particula)
+                particula.tiempos_eventos.append(tiempo_col)
+        
             
     def mover_particulas_y_osciladores(self, delta_t):
         
-        #Para partículas.
+        #Para todo
         for particula in self.particulas_y_osciladores:
                 particula.movimiento(np.float(delta_t))
 
@@ -520,14 +525,14 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
 
 
 if __name__ == '__main__':
-#    np.random.seed(2)
-    frecuencia = 4
+    np.random.seed(6)
+    frecuencia = 1.
     num_total = 7
     reservorio = Reservorio()
     caja = Caja(15.)
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
-    sim.run(10,1)    
+    sim.run(100,1)    
     plot_datos(sim, num_total, frecuencia, 1)
 #print sim.eventos
