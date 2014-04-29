@@ -46,7 +46,7 @@ class Particula_libre(object):
        self.etiqueta = etiqueta
        self.velocidades_colisiones = [v]
     def __repr__(self):
-        return "Partícula(%s,%s)"%(self.x,self.v)
+        return "Particula_libre(%s,%s)"%(self.x,self.v)
         
     def movimiento(self,delta_t):
         self.x += delta_t * self.v
@@ -78,7 +78,7 @@ class ReglasColision(object):
         self.caja = caja 
         self.reservorio = reservorio 
         
-   def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-6, n = 100., tiempo_inicial = 1e-3):
+   def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1.e-7, n = 500., tiempo_inicial = 1.e-5):
        
             x_p0 = particula_i.x
             x_p = particula_i.x
@@ -92,17 +92,17 @@ class ReglasColision(object):
             t = tiempo_inicial
             
             if v_p < 0:
-                delta_t = abs((-a_o + eq_o - x_p0)/(v_p*n))
+                delta_t = abs(( eq_o - x_p0)/(v_p*n))
             elif v_p >0:
-                delta_t = abs((a_o + eq_o - x_p0)/(v_p*n))
-            else:
-               g = abs((x_p0 - eq_o)/a_o)
-               #El igual a 1 no es una condición física, pero sí, bastante improbable.
-               if g >= 1.:
-                    t = float('inf')
-                    return t
-               else:
-                   delta_t = abs((eq_o - x_p0)/(a_o*w*n))
+                delta_t = abs((eq_o - x_p0)/(v_p*n))
+#            else:
+#               g = abs((x_p0 - eq_o)/a_o)
+#               #El igual a 1 no es una condición física, pero sí, bastante improbable.
+#               if g >= 1.:
+#                    t = float('inf')
+#                    return t
+#               else:
+#                   delta_t = abs((eq_o - x_p0)/(a_o*w*n))
             
            
             x_p = x_p0 + t*v_p
@@ -237,7 +237,7 @@ class Simulacion(object):
         
         indice = self.particulas_y_osciladores.index(particula)
 
-        #Para las partículas de los extremos
+        #Para las Particula_libres de los extremos
         
         try:
                 
@@ -286,7 +286,7 @@ class Simulacion(object):
             
             else:
     
-#Sólo consideramos las partículas
+#Sólo consideramos las Particula_libres
                        
                 dt = self.reglas_colision.tiempo_colision_particula_oscilador(particula, self.particulas_y_osciladores[indice - 1])    
                 
@@ -430,7 +430,7 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
 
 
     for i in xrange(num_particulas_y_osciladores):
-        #Si son partículas
+        #Si son Particula_libres
         if i % 2 == 0:
             x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
            
@@ -531,8 +531,33 @@ if __name__ == '__main__':
     reservorio = Reservorio()
     caja = Caja(15.)
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
+#    particula1 = Particula_libre(-11.4784400734,0.529218431572,-1)
+#    oscilador1 = Oscilador(-7.5,2.95865105786,9.30070065217,1.0)
+#    particula2 = Particula_libre(-3.78149951724,-0.723318718166)
+#    oscilador2 = Oscilador(0.0,2.59454550305,5.51437509544,1.0)
+#    particula3 = Particula_libre(6.22808445745,0.00359406328958)
+#    oscilador3 = Oscilador(7.5,2.16756562287,2.69020662034,1.0)
+#    particula4 = Particula_libre(8.44552065221,0.38673507761, 1)
+    
+#    particula1 = Particula_libre(-12.2756903288,-0.313120312353, -1)
+#    oscilador1 = Oscilador(-7.5,1.64265641132,2.11279566145,1.0)
+#    particula2 = Particula_libre(-6.09277075402,0.0023535786647)
+#    oscilador2 = Oscilador(0.0,0.626571767514,3.26266542901,1.0)
+#    particula3 = Particula_libre(4.68347741611,-0.889303685252)
+#    oscilador3 = Oscilador(7.5,0.647706374994,0.335107055695,1.0)
+#    particula4 = Particula_libre(8.01495359223,2.10892045405,1)
+
+#    lista = []
+#    lista.append(particula1)    
+#    lista.append(oscilador1)    
+#    lista.append(particula2)    
+#    lista.append(oscilador2)        
+#    lista.append(particula3)    
+#    lista.append(oscilador3)    
+#    lista.append(particula4)    
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
     sim.run(100,1)    
     plot_datos(sim, num_total, frecuencia, 1)
+    
 #print sim.eventos
