@@ -118,10 +118,10 @@ class ReglasColision(object):
                     x_p = x_p0 + t*v_p
                     x_o = a_o*np.sin(w*t + f_o )  + eq_o
                     h = sign(x_p - x_o)
-                    
-#                    if abs(x_p) > self.caja.tamano:
-#                        t = float('inf')
-#                        return t
+                   
+                    if abs(x_p) > self.caja.tamano:
+                        t = float('inf')
+                        return t
 
                 if abs(x_p - x_o) < tol:
                     break

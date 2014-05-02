@@ -44,3 +44,5 @@ for i in xrange(len(lista3)-1):
 
 flujo_promedio2 =  np.sum(deltaEs2)/lista2[-2]
 print flujo_promedio2
+
+gafgaf gfgaafgafg
