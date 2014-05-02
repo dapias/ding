@@ -9,70 +9,38 @@ from dingdef import crear_particulas_aleatorias, Reservorio, Caja, ReglasColisio
 import numpy as np
 
 
-frecuencia = 0.5
-num_total = 7
+frecuencia = 10.
+num_total = 5
 reservorio = Reservorio()
-caja = Caja(15.)
+caja = Caja(1.875)
 lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
-imprimir = 0
-sim.run(10, imprimir)
+imprimir = 1
+sim.run(300, imprimir)
 
-plot_datos(sim, num_total, frecuencia, 1)
+plot_datos(sim, num_total, frecuencia, 0)
 
 #Flujo entre partículas
 
-#Flujo pared izquierda - particula
-# Energía con la que llega, dividida entre el tiempo  (en este  caso, el lado izquierdo está más caliente.)
 
+lista1 = sim.registro_velocidades["Particula1"]
+lista2 = sim.t_eventos
+lista3 = sim.registro_velocidades["Particula" + str(len(sim.particulas))]
+deltaEs1 = []
 
-for i in xrange(len(sim.particulas_y_osciladores)):
-    print sim.particulas_y_osciladores[i].tiempos_colisiones
-#delta_energia 
+for i in xrange(len(lista1)-1):
+    deltaE_j = (lista1[i+1]**2 - lista1[i]**2)*0.5
+    deltaEs1.append(deltaE_j)
 
-#Flujo pared izquierda - particula
-# Energía con la que llega, dividida entre el tiempo  (en este  caso, el lado izquierdo está más caliente.)
+flujo_promedio1 =  np.sum(deltaEs1)/lista2[-2]
+print flujo_promedio1
 
-lista = sim.particulas_y_osciladores
+deltaEs2 = []
 
-px = [[] for _ in xrange(int(num_total)+1)]
+for i in xrange(len(lista3)-1):
+    deltaE_j = (lista3[i+1]**2 - lista3[i]**2)*0.5
+    deltaEs2.append(deltaE_j)
 
-#for i in xrange(len(sim.particulas_y_osciladores)):
-#    try:
-#        print sim.particulas_y_osciladores[i].velocidades_colisiones
-#    except(AttributeError):
-#        pass
-#deltas_energia = 
-#
-#
-#1./lista[0].tiempos_colisiones[-1]*(sum())
-
-px[0].append(0)
-for tiempo in sim.particulas_y_osciladores[0].tiempos_colisiones:
-    if not tiempo in sim.particulas_y_osciladores[1].tiempos_colisiones:
-        px[0].append(sim.particulas_y_osciladores[0].tiempos_colisiones.index(tiempo))
-
-
-for i in xrange(len(sim.particulas_y_osciladores) - 1):
-    for tiempo in sim.particulas_y_osciladores[i].tiempos_colisiones:
-        if tiempo in sim.particulas_y_osciladores[i + 1].tiempos_colisiones:
-            px[i+1].append(sim.particulas_y_osciladores[i].tiempos_colisiones.index(tiempo))
-
-px[-1].append(0)    
-for tiempo in sim.particulas_y_osciladores[-1].tiempos_colisiones:
-    if not tiempo in sim.particulas_y_osciladores[-2].tiempos_colisiones:
-        px[-1].append(sim.particulas_y_osciladores[-1].tiempos_colisiones.index(tiempo))
-        
-
-#Flujo pared izquierda - particula
-# Energía con la que llega, dividida entre el tiempo  (en este  caso, el lado izquierdo está más caliente.)
-
-#flujos = []
-#for j in xrange(int((num_total)/2) + 1):
-#    flujo = 1./lista[2*j].tiempos_colisiones[px[2*j][-1]]*np.sum([lista[2*j].velocidades_colisiones[px[2*j][i + 1]]**2*0.5 - lista[2*j].velocidades_colisiones[px[2*j][i + 1] - 1]**2*0.5 for i in xrange(len(px[2*j])-1)])
-#    flujos.append(flujo)
-
-#print flujoflujo = 1./lista[0].tiempos_colisiones[px[0][-1]]*np.sum([lista[0].velocidades_colisiones[px[0][i + 1]]**2*0.5 - lista[0].velocidades_colisiones[px[0][i + 1] - 1]**2*0.5 for i in xrange(len(px[0])-1)])
-
-#print flujos
+flujo_promedio2 =  np.sum(deltaEs2)/lista2[-2]
+print flujo_promedio2
