@@ -78,7 +78,7 @@ class ReglasColision(object):
         self.caja = caja 
         self.reservorio = reservorio 
         
-   def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-7, n = 600., tiempo_inicial = 1e-4):
+   def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-7, n = 200., tiempo_inicial = 1e-4):
        
             x_p0 = particula_i.x
             x_p = particula_i.x
