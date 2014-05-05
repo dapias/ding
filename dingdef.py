@@ -78,23 +78,20 @@ class ReglasColision(object):
         self.caja = caja 
         self.reservorio = reservorio 
         
-   def tiempo_colision_particula_oscilador(self,particula_i, oscilador_j, tol = 1e-7, n = 200., tiempo_inicial = 1e-4):
+   def tiempo_colision_particula_oscilador(self,particula, oscilador, tol = 1e-7, n = 200., tiempo_inicial = 1e-4):
        
-            x_p0 = particula_i.x
-            x_p = particula_i.x
-            v_p = particula_i.v
-            x_o = oscilador_j.x
-            a_o = abs(oscilador_j.a)
-            f_o = oscilador_j.fase
-            w = oscilador_j.omega
-            eq_o = oscilador_j.equilibrio
-            
+            x_p0 = particula.x
+            x_p = particula.x
+            v_p = particula.v
+            x_o = oscilador.x
+            a_o = abs(oscilador.a)
+            f_o = oscilador.fase
+            w = oscilador.omega
+            eq_o = oscilador.equilibrio
             t = tiempo_inicial
             
-            if v_p < 0:
-                delta_t = abs((eq_o - x_p0)/(v_p*n))
-            elif v_p >0:
-                delta_t = abs((eq_o - x_p0)/(v_p*n))
+            delta_t = abs((eq_o - x_p0)/(v_p*n))
+            
 #            else:
 #               g = abs((x_p0 - eq_o)/a_o)
 #               #El igual a 1 no es una condición física, pero sí, bastante improbable.

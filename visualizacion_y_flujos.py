@@ -13,39 +13,39 @@ from matplotlib import pyplot as plt
 frecuencia = 1.
 num_total = 11
 reservorio = Reservorio()
-caja = Caja(12)
+caja = Caja(12.)
 lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
 imprimir = 1
-steps = 2000
+steps = 50
 
 def plot_flujos(sim, plot = 0):
     
-    lista1 = sim.registro_velocidades["Particula1"]
-    lista2 = sim.t_eventos
-    lista3 = sim.registro_velocidades["Particula" + str(len(sim.particulas))]
+    v_particula_i = sim.registro_velocidades["Particula1"]
+    tiempo_eventos = sim.t_eventos
+    v_particula_d = sim.registro_velocidades["Particula" + str(len(sim.particulas))]
     
     deltaEs1 = []
     
-    for i in xrange(len(lista1)-1):
-        deltaE_j = (lista1[i+1]**2 - lista1[i]**2)*0.5
+    for i in xrange(len(v_particula_i)-1):
+        deltaE_j = (v_particula_i[i+1]**2 - v_particula_i[i]**2)*0.5
         deltaEs1.append(deltaE_j)
     
-    flujo_promedio1 =  np.sum(deltaEs1)/lista2[-1]
+    flujo_promedio1 =  np.sum(deltaEs1)/tiempo_eventos[-1]
     print flujo_promedio1
     
     deltaEs2 = []
     
-    for i in xrange(len(lista3)-1):
-        deltaE_j = (lista3[i+1]**2 - lista3[i]**2)*0.5
+    for i in xrange(len(v_particula_d)-1):
+        deltaE_j = (v_particula_d[i+1]**2 - v_particula_d[i]**2)*0.5
         deltaEs2.append(deltaE_j)
     
-    flujo_promedio2 =  np.sum(deltaEs2)/lista2[-1]
+    flujo_promedio2 =  np.sum(deltaEs2)/tiempo_eventos[-1]
     print flujo_promedio2
     
-    flujo1 = [np.sum(deltaEs1[0:i]) for i in xrange(len(deltaEs1))]/np.array(lista2[-1])
-    flujo2 = [np.sum(deltaEs2[0:i]) for i in xrange(len(deltaEs2))]/np.array(lista2[-1])
+    flujo1 = [np.sum(deltaEs1[0:i]) for i in xrange(len(deltaEs1))]/np.array(tiempo_eventos[-1])
+    flujo2 = [np.sum(deltaEs2[0:i]) for i in xrange(len(deltaEs2))]/np.array(tiempo_eventos[-1])
     
     numero_eventos = np.arange(len(flujo1))
     
