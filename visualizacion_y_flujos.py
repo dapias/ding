@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-frecuencia = 1.
+frecuencia =  1.
 num_total = 11
 reservorio = Reservorio()
 caja = Caja(12.)
@@ -18,7 +18,7 @@ lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
 imprimir = 1
-steps = 50
+steps = 100
 
 def plot_flujos(sim, plot = 0):
     

@@ -10,7 +10,27 @@ import random
 from matplotlib import pyplot as plt
 
 
+
 def sign(number):return cmp(number,0)
+
+#def bisect(f,x1,x2,switch=0,epsilon=1.0e-9):
+#   f1 = f(x1)
+#   if f1 == 0.0: return x1
+#   f2 = f(x2)
+#   if f2 == 0.0: return x2
+#   if f1*f2 > 0.0: return float('inf')
+#   n = int(np.ceil(np.log(abs(x2 - x1)/epsilon)/np.log(2.0)))
+#   for i in range(n):
+#        x3 = 0.5*(x1 + x2); f3 = f(x3)
+#        if (switch == 1) and (abs(f3) >abs(f1)) \
+#                         and (abs(f3) > abs(f2)):
+#            return None   
+#        if f3 == 0.0: return x3
+#        if f2*f3 < 0.0:
+#            x1 = x3; f1 = f3
+#        else:
+#            x2 = x3; f2 = f3
+#   return (x1 + x2)/2.0
 
 class Oscilador(object):
     """clase Oscilador que recibe amplitud, fase, frecuencia y posición inicial"""
@@ -78,7 +98,7 @@ class ReglasColision(object):
         self.caja = caja 
         self.reservorio = reservorio 
         
-   def tiempo_colision_particula_oscilador(self,particula, oscilador, tol = 1e-7, n = 200., tiempo_inicial = 1e-4):
+   def tiempo_colision_particula_oscilador(self,particula, oscilador, tol = 1e-8, n = 200., tiempo_inicial = 1e-5):
        
             x_p0 = particula.x
             x_p = particula.x
@@ -88,9 +108,37 @@ class ReglasColision(object):
             f_o = oscilador.fase
             w = oscilador.omega
             eq_o = oscilador.equilibrio
+           
             t = tiempo_inicial
+            x_p = x_p0 + t*v_p
             
-            delta_t = abs((eq_o - x_p0)/(v_p*n))
+            if x_p0 > (eq_o + a_o):
+                t = abs((eq_o + a_o - x_p0)/v_p)
+                x_p = x_p0 + t*v_p
+
+#                    delta_t = abs((eq_o - x_p)/(v_p*n))
+                    
+                    
+            elif x_p0 < (eq_o - a_o) :
+                t = abs((eq_o - a_o - x_p0)/v_p)  
+                x_p = x_p0 + t*v_p
+#                    delta_t = abs((eq_o - x_p)/(v_p*n))
+
+
+            
+            x_o = a_o*np.sin(w*t + f_o )  + eq_o
+            
+            if abs(x_p - x_o) < tol:
+                return t
+        
+            delta_t = np.pi/(w * n)
+         
+#            Ahora usaré bisección.
+#            def f(t):
+#                return (x_p0 + t*v_p - a_o*np.sin(w*t + f_o)  - eq_o)
+                
+#            k = bisect(f, t, t + delta_t)
+            
             
 #            else:
 #               g = abs((x_p0 - eq_o)/a_o)
@@ -101,10 +149,7 @@ class ReglasColision(object):
 #               else:
 #                   delta_t = abs((eq_o - x_p0)/(a_o*w*n))
 #            
-           
-            x_p = x_p0 + t*v_p
-            x_o = a_o*np.sin(w*t + f_o )  + eq_o
-            
+
             g = sign(x_p - x_o)
             h = sign(x_p - x_o)
                 
@@ -117,7 +162,7 @@ class ReglasColision(object):
                     h = sign(x_p - x_o)
                    
                     if abs(x_p) > self.caja.tamano:
-                        t = float('inf')
+                        t = float('inf') 
                         return t
 
                 if abs(x_p - x_o) < tol:
@@ -126,7 +171,8 @@ class ReglasColision(object):
                 t = t - delta_t
                 delta_t = delta_t*0.5
                 h = -h  
-            return t    
+            return t
+            
             
    def colision_particula_oscilador(self, particula_i,oscilador_j,delta_t):
    # Actualiza velocidades, amplitudes y fases.
