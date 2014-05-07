@@ -13,6 +13,43 @@ from matplotlib import pyplot as plt
 
 def sign(number):return cmp(number,0)
 
+
+       
+def brent(f,a,b,tol=1.0e-10):
+    x1 = a; x2 = b;
+    f1 = f(x1)
+    if f1 == 0.0: return x1
+    f2 = f(x2)
+    if f2 == 0.0: return x2
+    if f1*f2 > 0.0: raise ValueError("Root is not bracketed")
+    x3 = 0.5*(a + b)
+    for i in range(30):
+        f3 = f(x3)
+        if abs(f3) < tol: return x3
+    # Tighten the brackets on the root
+        if f1*f3 < 0.0: b = x3
+        else: a = x3
+        if (b - a) < tol*max(abs(b),1.0): return 0.5*(a + b)
+    # Try quadratic interpolation
+        denom = (f2 - f1)*(f3 - f1)*(f2 - f3)
+        numer = x3*(f1 - f2)*(f2 - f3 + f1) \
+            + f2*x1*(f2 - f3) + f1*x2*(f3 - f1)
+    # If division by zero, push x out of bounds
+        try: dx = f3*numer/denom
+        except ZeroDivisionError: dx = b - a
+        x = x3 + dx
+    # If iterpolation goes out of bounds, use bisection
+        if (b - x)*(x - a) < 0.0:
+            dx = 0.5*(b - a)
+            x = a + dx
+    # Let x3 <-- x & choose new x1 and x2 so that x1 < x3 < x2
+        if x < x3:
+            x2 = x3; f2 = f3
+        else:
+            x1 = x3; f1 = f3
+        x3 = x
+    print "Too many iterations in brent"
+
 #def bisect(f,x1,x2,switch=0,epsilon=1.0e-9):
 #   f1 = f(x1)
 #   if f1 == 0.0: return x1
@@ -73,7 +110,7 @@ class Particula_libre(object):
     
 class Reservorio(object):
     
-    def __init__(self, temperatura = 2.5, deltaT = 0., sentido = 0):
+    def __init__(self, temperatura = 100, deltaT = 0., sentido = 0):
         self.sentido = sentido
         self.temperatura = temperatura
         self.deltaT = deltaT
@@ -97,101 +134,72 @@ class ReglasColision(object):
    def __init__(self, caja, reservorio):
         self.caja = caja 
         self.reservorio = reservorio 
-        
-   def tiempo_colision_particula_oscilador(self,particula, oscilador, tol = 1e-8, n = 300., tiempo_inicial = 1e-5):
+   
+
+  
+     
+   def tiempo_colision_particula_oscilador(self,particula, oscilador, tiempo_inicial = 1e-10):
        
             x_p0 = particula.x
-            x_p = particula.x
             v_p = particula.v
-            x_o = oscilador.x
             a_o = abs(oscilador.a)
             f_o = oscilador.fase
             w = oscilador.omega
             eq_o = oscilador.equilibrio
-           
-            t = tiempo_inicial
-            x_p = x_p0 + t*v_p
+            
             
             if x_p0 > (eq_o + a_o):
-                t = abs((eq_o + a_o - x_p0)/v_p)
-                x_p = x_p0 + t*v_p
-                
                 if v_p > 0:
-                    t = float('inf') 
-                    return t
-                    
+                    return float('inf') 
+                else:
+                    t = abs((eq_o + a_o - x_p0)/v_p)
 
-#                    delta_t = abs((eq_o - x_p)/(v_p*n))
-                    
-                    
+
+
             elif x_p0 < (eq_o - a_o) :
-                t = abs((eq_o - a_o - x_p0)/v_p)  
-                x_p = x_p0 + t*v_p
-
                 if v_p < 0:
-                    t = float('inf') 
-                    return t
-
-#                    delta_t = abs((eq_o - x_p)/(v_p*n))
-
-
-            
-            x_o = a_o*np.sin(w*t + f_o )  + eq_o
-            
-            if abs(x_p - x_o) < tol:
-                return t
-        
-            delta_t = np.pi/(w * n)
-         
-#            Ahora usaré bisección.
-#            def f(t):
-#                return (x_p0 + t*v_p - a_o*np.sin(w*t + f_o)  - eq_o)
+                    return float('inf') 
+                else:
+                    t = abs((eq_o - a_o - x_p0)/v_p)  
                 
-#            k = bisect(f, t, t + delta_t)
-            
-            
-#            else:
-#               g = abs((x_p0 - eq_o)/a_o)
-#               #El igual a 1 no es una condición física, pero sí, bastante improbable.
-#               if g >= 1.:
-#                    t = float('inf')
-#                    return t
-#               else:
-#                   delta_t = abs((eq_o - x_p0)/(a_o*w*n))
-#            
+            else:
+                t = tiempo_inicial
 
-            g = sign(x_p - x_o)
-            h = sign(x_p - x_o)
+#            x_o = a_o*np.sin(w*t + f_o )  + eq_o
+#            if abs(x_p - x_o) < tol:
+#                return t
+
+            
+            f_o = f_o % (np.pi/2)
+            t_minimo = (np.arccos(0.) - f_o)/w
+            periodo = np.pi/w
+            
+            if t > t_minimo:
+                m = np.ceil((t-t_minimo)/(periodo))
+                t2 = t_minimo + periodo*m
+            else:
+                t2 = t_minimo
                 
+            def r(t):
+                return a_o*np.sin(w*t + f_o) + eq_o - v_p*t-x_p0
                 
+            
             while 1:
-                while g == h:
-                    t += delta_t
-                    x_p = x_p0 + t*v_p
-                    x_o = a_o*np.sin(w*t + f_o )  + eq_o
-                    h = sign(x_p - x_o)
-                   
-#                    if x_p > (eq_o + a_o):
-#                        if v_p > 0:
-#                            t = float('inf') 
-#                            return t
-#                            
-#                    elif x_p < (eq_o - a_o) :
-#                        if v_p < 0:
-#                            t = float('inf')
-#                            return t
-                    if abs(x_p) > self.caja.tamano:
-                        t = float('inf') 
-                        return t
-
-                if abs(x_p - x_o) < tol:
+                g = sign(r(t))
+                h = sign(r(t2))
+                if g !=h:
+                    tiempo = brent(r,t,t2)
                     break
                 
-                t = t - delta_t
-                delta_t = delta_t*0.5
-                h = -h  
-            return t
-            
+                else:
+                    t = t2
+                    t2 += periodo
+                    if abs(x_p0 + t2*v_p) > self.caja.tamano:
+                        return float('inf')
+                        break
+                    
+            return tiempo
+                                
             
    def colision_particula_oscilador(self, particula_i,oscilador_j,delta_t):
    # Actualiza velocidades, amplitudes y fases.
@@ -471,7 +479,7 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
             x_eq = -tamano_caja + i
             A = np.sqrt(1.)/omega
 #            A = np.random.uniform(2.*np.sqrt((0.4*(num_particulas_y_osciladores-1)*0.5- 0.6)/(num_particulas_y_osciladores-1)*0.5)/omega)
-            Fase = np.random.uniform(0,np.pi)
+            Fase = np.random.uniform(0,np.pi/2)
             nueva_particula = Oscilador(x_eq,A,Fase,omega)
             
             
@@ -548,6 +556,6 @@ if __name__ == '__main__':
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
-    sim.run(10,1)    
+    sim.run(5,1)    
     plot_datos(sim, num_total, frecuencia, 0)
 #print sim.eventos
