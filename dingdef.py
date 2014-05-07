@@ -73,7 +73,7 @@ class Particula_libre(object):
     
 class Reservorio(object):
     
-    def __init__(self, temperatura = 2.5, deltaT = 1., sentido = 0):
+    def __init__(self, temperatura = 2.5, deltaT = 0., sentido = 0):
         self.sentido = sentido
         self.temperatura = temperatura
         self.deltaT = deltaT
@@ -448,25 +448,28 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
 #            x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
             x = -tamano_caja + i
             if i == 0:
-                v = reservorio.velocidad()
+#                v = reservorio.velocidad()
+                v = np.sqrt(2)
                 nueva_particula = Particula_libre(x, v, -1)
                 
             elif i == num_particulas_y_osciladores-1:
 #                reservorio.sentido == 1
-                v = -reservorio.velocidad(1)
+#                v = -reservorio.velocidad(1)
+                v = -np.sqrt(2)
                 nueva_particula = Particula_libre(x, v, 1)
             else:
                 i = np.random.random()
-                if i < 0.5:
-                    v = random.choice([-1.,1.])*reservorio.velocidad(1)
-                else:
-                    v = random.choice([-1.,1.])*reservorio.velocidad()
+                v = random.choice([-1.,1.])*np.sqrt(2)
+#                if i < 0.5:
+#                    v = random.choice([-1.,1.])*reservorio.velocidad(1)
+#                else:
+#                    v = random.choice([-1.,1.])*reservorio.velocidad()
                     
                 nueva_particula = Particula_libre(x, v)
                 
         else:
             x_eq = -tamano_caja + i
-            A = np.sqrt(0.1)/100.
+            A = np.sqrt(1.)/omega
 #            A = np.random.uniform(2.*np.sqrt((0.4*(num_particulas_y_osciladores-1)*0.5- 0.6)/(num_particulas_y_osciladores-1)*0.5)/omega)
             Fase = np.random.uniform(0,np.pi)
             nueva_particula = Oscilador(x_eq,A,Fase,omega)
