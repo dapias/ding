@@ -73,7 +73,7 @@ class Particula_libre(object):
     
 class Reservorio(object):
     
-    def __init__(self, temperatura = 2.5, deltaT = 1, sentido = 0):
+    def __init__(self, temperatura = 2.5, deltaT = 1., sentido = 0):
         self.sentido = sentido
         self.temperatura = temperatura
         self.deltaT = deltaT
@@ -81,9 +81,9 @@ class Reservorio(object):
     def velocidad(self, j = 0):
         i = np.random.random()
         if self.sentido == 0:
-            vel = (np.sqrt(-np.log(1-i)*2*self.temperatura))
+            vel = (np.sqrt(-np.log(1.-i)*2.*self.temperatura))
         if self.sentido == 1 or j==1:
-            vel = -(np.sqrt(-np.log(1-i)*2*(self.temperatura-self.deltaT)))
+            vel = -(np.sqrt(-np.log(1.-i)*2.*(self.temperatura-self.deltaT)))
         return vel
         
 class Caja(object):
@@ -98,7 +98,7 @@ class ReglasColision(object):
         self.caja = caja 
         self.reservorio = reservorio 
         
-   def tiempo_colision_particula_oscilador(self,particula, oscilador, tol = 1e-8, n = 200., tiempo_inicial = 1e-5):
+   def tiempo_colision_particula_oscilador(self,particula, oscilador, tol = 1e-8, n = 300., tiempo_inicial = 1e-5):
        
             x_p0 = particula.x
             x_p = particula.x
@@ -115,6 +115,11 @@ class ReglasColision(object):
             if x_p0 > (eq_o + a_o):
                 t = abs((eq_o + a_o - x_p0)/v_p)
                 x_p = x_p0 + t*v_p
+                
+                if v_p > 0:
+                    t = float('inf') 
+                    return t
+                    
 
 #                    delta_t = abs((eq_o - x_p)/(v_p*n))
                     
@@ -122,6 +127,11 @@ class ReglasColision(object):
             elif x_p0 < (eq_o - a_o) :
                 t = abs((eq_o - a_o - x_p0)/v_p)  
                 x_p = x_p0 + t*v_p
+
+                if v_p < 0:
+                    t = float('inf') 
+                    return t
+
 #                    delta_t = abs((eq_o - x_p)/(v_p*n))
 
 
@@ -161,6 +171,15 @@ class ReglasColision(object):
                     x_o = a_o*np.sin(w*t + f_o )  + eq_o
                     h = sign(x_p - x_o)
                    
+#                    if x_p > (eq_o + a_o):
+#                        if v_p > 0:
+#                            t = float('inf') 
+#                            return t
+#                            
+#                    elif x_p < (eq_o - a_o) :
+#                        if v_p < 0:
+#                            t = float('inf')
+#                            return t
                     if abs(x_p) > self.caja.tamano:
                         t = float('inf') 
                         return t
@@ -426,22 +445,29 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
     for i in xrange(num_particulas_y_osciladores):
         #Si son partículas
         if i % 2 == 0:
-            x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
-           
+#            x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
+            x = -tamano_caja + i
             if i == 0:
-                v = (random.choice([1.,-1.]))*reservorio.velocidad()
+                v = reservorio.velocidad()
                 nueva_particula = Particula_libre(x, v, -1)
+                
             elif i == num_particulas_y_osciladores-1:
 #                reservorio.sentido == 1
-                v = (random.choice([1.,-1.]))*reservorio.velocidad(1)
+                v = -reservorio.velocidad(1)
                 nueva_particula = Particula_libre(x, v, 1)
             else:
-                v = np.random.uniform(-reservorio.velocidad(1),reservorio.velocidad())
+                i = np.random.random()
+                if i < 0.5:
+                    v = random.choice([-1.,1.])*reservorio.velocidad(1)
+                else:
+                    v = random.choice([-1.,1.])*reservorio.velocidad()
+                    
                 nueva_particula = Particula_libre(x, v)
                 
         else:
-            x_eq = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
-            A = np.random.uniform(tamano_caja/(2.*(num_particulas_y_osciladores+1.)))
+            x_eq = -tamano_caja + i
+            A = np.sqrt(0.1)/100.
+#            A = np.random.uniform(2.*np.sqrt((0.4*(num_particulas_y_osciladores-1)*0.5- 0.6)/(num_particulas_y_osciladores-1)*0.5)/omega)
             Fase = np.random.uniform(0,np.pi)
             nueva_particula = Oscilador(x_eq,A,Fase,omega)
             
@@ -498,13 +524,7 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
 
             tiempo.append(t)
             t += dt
-        
 
-
-                
-
-    
- 
     for j in xrange(int(num_particulas)):
         plt.plot(tiempo, px[j])
     for j in xrange(int(num_osciladores)):
@@ -521,7 +541,7 @@ if __name__ == '__main__':
     frecuencia = 10.
     num_total = 5
     reservorio = Reservorio()
-    caja = Caja(15.)
+    caja = Caja(np.float(num_total - 1.)/2.)
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
