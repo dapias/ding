@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-frecuencia = 1.
+frecuencia = 10.
 num_total = 5
 reservorio = Reservorio()
 caja = Caja(np.float((num_total - 1.)/2.))
@@ -18,7 +18,7 @@ lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
 imprimir = 1
-steps = 5000
+steps = 10000
 descartados = 100
 
 def plot_flujos(sim,n = 100, k=1):
@@ -40,16 +40,16 @@ def plot_flujos(sim,n = 100, k=1):
     
     flujo_promedio = [[] for _ in xrange(len(sim.particulas))]
     for j in xrange(len(sim.particulas)):
-        flujo_promedio[j].append(np.sum(np.abs(deltaEs[j]))/tiempo_eventos[-2])
-#        flujo_promedio[j].append(np.sum((deltaEs[j]))/tiempo_eventos[-2])
+#        flujo_promedio[j].append(np.sum(np.abs(deltaEs[j]))/tiempo_eventos[-2])
+        flujo_promedio[j].append(np.sum((deltaEs[j]))/tiempo_eventos[-2])
         
     print flujo_promedio
         
     flujos =[]
     
     for j in xrange(len(sim.particulas)):
-        flujos.append( [np.sum(np.abs(deltaEs[j][n:n+i+2])) for i in xrange(len(tiempo_eventos[n+1:-1]))]/(np.array(tiempo_eventos[n+1:-1])- np.array(tiempo_eventos[n])))
-#        flujos.append( [np.sum((deltaEs[j][n:n+i+2])) for i in xrange(len(tiempo_eventos[n+1:-1]))]/(np.array(tiempo_eventos[n+1:-1])- np.array(tiempo_eventos[n])))
+#        flujos.append( [np.sum(np.abs(deltaEs[j][n:n+i+2])) for i in xrange(len(tiempo_eventos[n+1:-1]))]/(np.array(tiempo_eventos[n+1:-1])- np.array(tiempo_eventos[n])))
+        flujos.append( [np.sum((deltaEs[j][n:n+i+2])) for i in xrange(len(tiempo_eventos[n+1:-1]))]/(np.array(tiempo_eventos[n+1:-1])- np.array(tiempo_eventos[n])))
     promedio_flujos = []
     
     for j in xrange(len(sim.particulas)):

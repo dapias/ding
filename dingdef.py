@@ -110,7 +110,7 @@ class Particula_libre(object):
     
 class Reservorio(object):
     
-    def __init__(self, temperatura = 100, deltaT = 0., sentido = 0):
+    def __init__(self, temperatura = 2.5, deltaT = 0., sentido = 0):
         self.sentido = sentido
         self.temperatura = temperatura
         self.deltaT = deltaT
@@ -138,7 +138,7 @@ class ReglasColision(object):
 
   
      
-   def tiempo_colision_particula_oscilador(self,particula, oscilador, tiempo_inicial = 1e-10):
+   def tiempo_colision_particula_oscilador(self,particula, oscilador, tiempo_inicial = 1.e-7, tol = 1.e-10):
        
             x_p0 = particula.x
             v_p = particula.v
@@ -147,57 +147,85 @@ class ReglasColision(object):
             w = oscilador.omega
             eq_o = oscilador.equilibrio
             
+            periodo = (2*np.pi)/(w)
             
             if x_p0 > (eq_o + a_o):
                 if v_p > 0:
-                    return float('inf') 
+                    t = float('inf')
+                    return t
                 else:
-                    t = abs((eq_o + a_o - x_p0)/v_p)
-
-
+                    t = abs((eq_o + a_o- x_p0)/v_p)
+                    t_minimo = ((np.arccos(0.) - f_o)/w)
+                    
+                    if t_minimo > 0:
+                        t_minimo = t_minimo % periodo
+                    else:
+                        while t_minimo < 0.:
+                            t_minimo += periodo
 
             elif x_p0 < (eq_o - a_o) :
                 if v_p < 0:
-                    return float('inf') 
+                    t = float('inf') 
+                    return t
                 else:
-                    t = abs((eq_o - a_o - x_p0)/v_p)  
-                
+                    t = abs((eq_o - a_o - x_p0)/v_p) 
+                    t_minimo = ((np.arccos(0.) - f_o)/w)
+                    
+                    if t_minimo > 0:
+                        t_minimo = t_minimo % periodo
+                    else:
+                        while t_minimo < 0.:
+                            t_minimo += periodo
+
+
+
             else:
                 t = tiempo_inicial
+                t_minimo = (np.arccos(v_p/(a_o*w)) - f_o)/w
 
-#            x_o = a_o*np.sin(w*t + f_o )  + eq_o
-#            if abs(x_p - x_o) < tol:
-#                return t
 
             
-            f_o = f_o % (np.pi/2)
-            t_minimo = (np.arccos(0.) - f_o)/w
-            periodo = np.pi/w
-            
-            if t > t_minimo:
-                m = np.ceil((t-t_minimo)/(periodo))
-                t2 = t_minimo + periodo*m
-            else:
-                t2 = t_minimo
-                
+            x_p = x_p0 + t*v_p
+            x_o = a_o*np.sin(w*t + f_o )  + eq_o
+
+            if abs(x_p - x_o) < tol:
+                return t
+
+            if 0 < t_minimo < t:
+                t = tiempo_inicial
+             
+            m = np.ceil((t-t_minimo)/(periodo))
+            if m < 0.:
+                m = 0.
+               
+            t3 = t_minimo + periodo*m
+          
             def r(t):
-                return a_o*np.sin(w*t + f_o) + eq_o - v_p*t-x_p0
-                
+                return a_o*np.sin(w*t + f_o) + eq_o - v_p*t- x_p0
+
+            t_nuevo = t3
             
-            while 1:
-                g = sign(r(t))
-                h = sign(r(t2))
-                if g !=h:
-                    tiempo = brent(r,t,t2)
-                    break
-                
+            tiempo = float('inf')
+ 
+            
+            for i in xrange(12):
+                if i == 0:
+                    t2 = t
+                    t3 = t_minimo
+                elif i % 2 == 0 and i != 0: 
+                    t2 = t3
+                    t3 = t_nuevo + (i-1)*periodo
                 else:
-                    t = t2
-                    t2 += periodo
-                    if abs(x_p0 + t2*v_p) > self.caja.tamano:
-                        return float('inf')
-                        break
-                    
+                    t2 = t3
+                    t3 = (2*np.pi - w*t3 - 2*f_o)/w + (i-1)*periodo
+
+                g = sign(r(t2))
+                h = sign(r(t3))
+
+                if g !=h:
+                    tiempo = brent(r,t2,t3)
+                    break
+
             return tiempo
                                 
             
@@ -397,6 +425,7 @@ class Simulacion(object):
         
         for i in xrange(steps):
             
+
             self.actualizar_particulas()
             t_siguiente_evento = min(self.eventos.keys())
             siguiente_evento = self.eventos[t_siguiente_evento]
@@ -548,7 +577,7 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
 
 
 if __name__ == '__main__':
-#    np.random.seed(6)
+    np.random.seed(6)
     frecuencia = 10.
     num_total = 5
     reservorio = Reservorio()
@@ -556,6 +585,6 @@ if __name__ == '__main__':
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
-    sim.run(5,1)    
+    sim.run(50,1)    
     plot_datos(sim, num_total, frecuencia, 0)
 #print sim.eventos
