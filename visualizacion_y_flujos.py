@@ -18,8 +18,8 @@ lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
 imprimir = 1
-steps = 10000
-descartados = 100
+steps = 100
+descartados = 10
 
 def plot_flujos(sim,n = 100, k=1):
     
