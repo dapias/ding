@@ -140,120 +140,143 @@ class ReglasColision(object):
      
    def tiempo_colision_particula_oscilador(self,particula, oscilador, tiempo_inicial = 1.e-7, tol = 1.e-10):
        
-       tiempo = float('inf')
-       x_p0 = particula.x
-       v_p = particula.v
-       a_o = abs(oscilador.a)
-       f_o = oscilador.fase
-       w = oscilador.omega
-       eq_o = oscilador.equilibrio
+           
+        tiempo = float('inf')
 
-       periodo = (2*np.pi)/(w)
-       k = 0
-       if x_p0 > (eq_o + a_o):
-           if v_p > 0:
-               t = float('inf')
-               return t
-           else:
-               t = abs((eq_o + a_o- x_p0)/v_p)
-               t_minimo = ((np.arccos(0.) - f_o)/w)
-               k = 1
-               
-       elif x_p0 < (eq_o - a_o) :
-           if v_p < 0:
-               t = float('inf') 
-               return t
-           else:
-               t = abs((eq_o - a_o - x_p0)/v_p) 
-               t_minimo = ((np.arccos(0.) - f_o)/w)
-               k = 1
-       else:
-           t = tiempo_inicial
-           t_minimo = (np.arccos(v_p/(a_o*w)) - f_o)/w
-           if np.isnan(t_minimo):
-               t_minimo = (np.arccos(0.) - f_o)/w
-       
+        x_p0 = particula.x
+        v_p = particula.v
+        a_o = abs(oscilador.a)
+        f_o = oscilador.fase
+        w = oscilador.omega
+        eq_o = oscilador.equilibrio
 
-       x_p = x_p0 + t*v_p
-       x_o = a_o*np.sin(w*t + f_o )  + eq_o
-
-       if abs(x_p - x_o) < tol:
-           return t
+        periodo = (2*np.pi)/(w)
+        k = 0
         
-
-       if t_minimo > 0:
-           t_minimo = t_minimo % periodo
-       else:
-           while t_minimo < 0.:
-               t_minimo += periodo
-
-       t_minimo2 = (2*np.pi - w*t_minimo - 2*f_o)/w
-
-       t_minimo = min(t_minimo, t_minimo2)
+        f_o = f_o % (2*np.pi)
+        
        
-       
-#       if t_minimo2 < 0.:
-#           pass
-#       else:
-#           t_minimo = min(t_minimo, t_minimo2)
+        if x_p0 > (eq_o + a_o):
+            if v_p > 0:
+                t = float('inf')
+                return t
+            else:
+                t = abs((eq_o + a_o- x_p0)/v_p)
+                t_minimo = ((np.arccos(v_p/(a_o*w)) - f_o)/w)
+                if np.isnan(t_minimo):
+                    t_minimo = abs((eq_o - a_o- x_p0)/v_p)
+                
+                t_minimo2 = (2*np.pi - w*t_minimo - 2*f_o)/w
 
+                k = 1
+                
+        elif x_p0 < (eq_o - a_o) :
+            if v_p < 0:
+                t = float('inf') 
+                return t
+            else:
+                t = abs((eq_o - a_o - x_p0)/v_p)
+                t_minimo = ((np.arccos(v_p/(a_o*w)) - f_o)/w)
+                if np.isnan(t_minimo):
+                    t_minimo =  abs((eq_o + a_o- x_p0)/v_p)
+                    
+                t_minimo2 = (2*np.pi - w*t_minimo - 2*f_o)/w
 
-#            if 0 < t < t_minimo:
-#                t = tiempo_inicial
-#             
-       m = np.ceil((t-t_minimo)/(periodo/2.))
-       if m < 0.:
-           m = 0.
+                k = 1
+        
+        else:
+            t = tiempo_inicial
+            t_minimo = (np.arccos(v_p/(a_o*w)) - f_o)/w
+            if np.isnan(t_minimo):
+                if v_p > 0.:
+                    t_minimo = abs((eq_o + a_o - x_p0)/v_p)
+                elif v_p < 0.:    
+                    t_minimo = abs((eq_o - a_o - x_p0)/v_p)
+            
+            t_minimo2 = (2*np.pi - w*t_minimo - 2*f_o)/w
+            k = 0
 
-       t3 = t_minimo + (periodo/2.)*m
-       if 0 < t3 < t:
-           t = tiempo_inicial
-       def r(t):
-           return a_o*np.sin(w*t + f_o) + eq_o - v_p*t- x_p0
+          
+            
+        while t_minimo < 0.:
+            t_minimo +=  periodo
+            t_minimo2 += periodo
+        
+        while 1:
+            t_minimo -= periodo
+            if t_minimo < 0:
+                break
+        
+        t_minimo = t_minimo + periodo
+        
+        
+        while 1:
+            t_minimo2-= periodo
+   
+            if t_minimo2< 0:
+                break
+         
+        t_minimo2 = t_minimo2 + periodo
+        
+        if k == 1:
+            x_p = x_p0 + t*v_p
+            x_o = a_o*np.sin(w*t + f_o )  + eq_o
 
+            if abs(x_p - x_o) < tol:
+                return t
+        
+            m = np.ceil((t-t_minimo)/periodo)
+            n = np.ceil((t-t_minimo2)/periodo)
 
-       if k == 0:
-            t_nuevo = t3
-       elif k == 1:
-            t_nuevo = t_minimo
-       
-
-       for i in xrange(12):
+        
+            t_desplazado1 = t_minimo + m*periodo
+            t_desplazado2 = t_minimo2 + n*periodo
+        
+            t_menor = min(t_desplazado1, t_desplazado2)
+            t_mayor = max(t_desplazado1, t_desplazado2)
+        
+        elif k == 0:
+            t_menor = min(t_minimo,t_minimo2)
+            t_mayor = max(t_minimo, t_minimo2)
+        
+        def r(t):
+            return a_o*np.sin(w*t + f_o) + eq_o - v_p*t- x_p0
+            
+        for i in xrange(12):
             if i == 0:
                 t2 = t
-                t3 = t_nuevo
-               
+                t3 = t_menor
+                #print t2, t3
             elif i == 1:
-                if (2*np.pi - w*t_nuevo - 2*f_o)/w < 0:
-                    t2 = t3
-                    t3 = (2*np.pi - w*t_nuevo - 2*f_o)/w + periodo
-                else:
-                    t2 = t3
-                    t3 = (2*np.pi - w*t_nuevo - 2*f_o)/w
-                   
+                t2 = t_menor
+                t3 = t_mayor
+
+                    
             elif i % 2 == 0 and i != 0: 
                 t2 = t3
-                t3 = t_nuevo + (i-1)*periodo
+                t3 = t_menor + (i-1)*periodo
+
+            
             else:
-                if (2*np.pi - w*t_nuevo - 2*f_o)/w < 0:
-                    t2 = t3
-                    t3 = (2*np.pi - w*t_nuevo - 2*f_o)/w + periodo*i
-                else:
-                    t2 = t3
-                    t3 = (2*np.pi - w*t_nuevo - 2*f_o)/w + (i - 1)*periodo
-     
+                t2 = t3
+                t3 = t_mayor + (i-2)*periodo
+
+                
+
+
             g = sign(r(t2))
             h = sign(r(t3))
 
             if g !=h:
                 tiempo = brent(r,t2,t3)
                 break
-            
-       if tiempo < 0.:
-           tiempo = float('inf')
-         
-#       print tiempo
-       return tiempo
+
+        if tiempo < 0.:
+            tiempo = float('inf')
+
+
+        print tiempo
+        return tiempo
              
                                 
             
@@ -616,7 +639,7 @@ if __name__ == '__main__':
     lista.append(particula2)
     lista.append(oscilador2)
     lista.append(particula3)
-    np.random.seed(1)
+#    np.random.seed(1)
     frecuencia = 10.
     num_total = 5
     reservorio = Reservorio()

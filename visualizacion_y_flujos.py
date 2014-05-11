@@ -18,7 +18,7 @@ lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
 imprimir = 1
-steps = 100
+steps = 500
 descartados = 10
 
 def plot_flujos(sim,n = 100, k=1):
@@ -94,7 +94,7 @@ def plot_flujos(sim,n = 100, k=1):
 try:
     sim.run(steps, imprimir)
     plot_datos(sim, num_total, frecuencia, 0)
-    plot_flujos(sim, descartados)
+#    plot_flujos(sim, descartados)
     
 except(ValueError):
     print "Hubo un error en alguna particula"
