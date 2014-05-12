@@ -110,7 +110,7 @@ class Particula_libre(object):
     
 class Reservorio(object):
     
-    def __init__(self, temperatura = 2.5, deltaT = 0., sentido = 0):
+    def __init__(self, temperatura = 2.5, deltaT = 1., sentido = 0):
         self.sentido = sentido
         self.temperatura = temperatura
         self.deltaT = deltaT
@@ -275,7 +275,7 @@ class ReglasColision(object):
             tiempo = float('inf')
 
 
-        print tiempo
+#        print tiempo
         return tiempo
              
                                 
@@ -299,17 +299,17 @@ class ReglasColision(object):
       else:
           oscilador_j.fase = abs(np.arccos(v_vieja/np.sqrt(h)))
       
-      if abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
+      if abs(oscilador_j.fase % np.pi) < 1e-10 and oscilador_j.x < oscilador_j.equilibrio :
           oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
           
-      elif abs(oscilador_j.fase - np.pi) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
+      elif abs(oscilador_j.fase % np.pi) < 1e-10 and oscilador_j.x > oscilador_j.equilibrio :
           oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
       
-      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x > oscilador_j.equilibrio :
+      elif abs(oscilador_j.fase) < 1e-10 and oscilador_j.x > oscilador_j.equilibrio :
           oscilador_j.fase = abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
           
      
-      elif abs(oscilador_j.fase) < 1e-4 and oscilador_j.x < oscilador_j.equilibrio :
+      elif abs(oscilador_j.fase) < 1e-10 and oscilador_j.x < oscilador_j.equilibrio :
           oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
          
       particula_i.v = v_vieja + a_vieja*w*np.cos(w*delta_t + f_vieja)  - oscilador_j.a*w*np.cos(oscilador_j.fase)
@@ -466,63 +466,67 @@ class Simulacion(object):
                     pass
         
 
-    def run(self, steps=10, imprimir = 0 ):
+    def run(self, imprimir = 0):
         
         
-        self.registro_posiciones = {"Particula" + str(i + 1) : np.ones(steps) for i in range(int(self.longpart))}
-        self.registro_velocidades = {"Particula" + str(i + 1) : np.ones(steps) for i in range(int(self.longpart))}
-        self.registro_amplitudes = {"Oscilador" + str(i + 1) : np.ones(steps) for i in range(int(self.longosc))}
-        self.registro_fases = {"Oscilador" + str(i + 1) : np.ones(steps) for i in range(int(self.longosc))}
-        
-        for i in xrange(steps):
-            
+        self.registro_posiciones = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
+        self.registro_velocidades = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
+        self.registro_amplitudes = {"Oscilador" + str(i + 1) : [] for i in range(int(self.longosc))}
+        self.registro_fases = {"Oscilador" + str(i + 1) : [] for i in range(int(self.longosc))}
 
-            self.actualizar_particulas()
-            t_siguiente_evento = min(self.eventos.keys())
-            siguiente_evento = self.eventos[t_siguiente_evento]
-
-#Estos datos los usaré después para plotear y calcular los flujos.            
-            for j in xrange(self.longpart):
-                self.registro_posiciones["Particula" + str(j+1)][i] = self.particulas[j].x
-                self.registro_velocidades["Particula" + str(j+1)][i] = self.particulas[j].v
+        i = 0
+        
+        try:
+            while True:   
+                self.actualizar_particulas()
+                t_siguiente_evento = min(self.eventos.keys())
+                siguiente_evento = self.eventos[t_siguiente_evento]
+        
+        #Estos datos los usaré después para plotear y calcular los flujos.            
+                for j in xrange(self.longpart):
+                    self.registro_posiciones["Particula" + str(j+1)].append(self.particulas[j].x)
+                    self.registro_velocidades["Particula" + str(j+1)].append(self.particulas[j].v)
+                    
+                for k in xrange(self.longosc):
+                    self.registro_amplitudes["Oscilador" + str(k+1)].append(self.osciladores[k].a)
+                    self.registro_fases["Oscilador" + str(k+1)].append(self.osciladores[k].fase)
+                             
+        
+        #Si se estrella contra la pared
+        
+                if siguiente_evento[1] is None:
+                    delta_t = self.reglas_colision.tiempo_colision_pared(siguiente_evento[0]) #Lo mismo que ya había hecho
+                    self.tiempo = t_siguiente_evento #El tiempo que había más éste delta t"
+                    self.mover_particulas_y_osciladores(delta_t) #Cambio posiciones del oscilador y las particulas
+                    self.actualizar_fases(np.float(delta_t))      #Actualizo las fases de todos los ociladores.               
+                    self.reglas_colision.colision_pared(siguiente_evento[0])
+        
+        # Si chocan la particula y el oscilador
+           
+                else:
+                    delta_t = self.reglas_colision.tiempo_colision_particula_oscilador(siguiente_evento[0], siguiente_evento[1])
+                    self.tiempo = t_siguiente_evento
+                    self.mover_particulas_y_osciladores(delta_t)
+                    self.actualizar_fases(delta_t, siguiente_evento[1]) #Acualizo las fases de todos los osciladores, exceptuando el que chocó
+                    self.reglas_colision.colision_particula_oscilador(siguiente_evento[0], siguiente_evento[1],np.float(delta_t))
+        
+        
+         
+                self.t_eventos.append(self.tiempo) 
                 
-            for k in xrange(self.longosc):
-                self.registro_amplitudes["Oscilador" + str(k+1)][i] = self.osciladores[k].a
-                self.registro_fases["Oscilador" + str(k+1)][i] = self.osciladores[k].fase
-                         
-
-#Si se estrella contra la pared
-
-            if siguiente_evento[1] is None:
-                delta_t = self.reglas_colision.tiempo_colision_pared(siguiente_evento[0]) #Lo mismo que ya había hecho
-                self.tiempo = t_siguiente_evento #El tiempo que había más éste delta t"
-                self.mover_particulas_y_osciladores(delta_t) #Cambio posiciones del oscilador y las particulas
-                self.actualizar_fases(np.float(delta_t))      #Actualizo las fases de todos los ociladores.               
-                self.reglas_colision.colision_pared(siguiente_evento[0])
-
-# Si chocan la particula y el oscilador
-   
-            else:
-                delta_t = self.reglas_colision.tiempo_colision_particula_oscilador(siguiente_evento[0], siguiente_evento[1])
-                self.tiempo = t_siguiente_evento
-                self.mover_particulas_y_osciladores(delta_t)
-                self.actualizar_fases(delta_t, siguiente_evento[1]) #Acualizo las fases de todos los osciladores, exceptuando el que chocó
-                self.reglas_colision.colision_particula_oscilador(siguiente_evento[0], siguiente_evento[1],np.float(delta_t))
-
-
-     
-            self.t_eventos.append(self.tiempo) 
+                if imprimir == 1:
+                    print i + 1,  self.tiempo, self.particulas_y_osciladores
+                
+        #Esta condición es por si algo sale mal.               
+                for particula in self.particulas:
+                    if abs(particula.x) > self.reglas_colision.caja.tamano + 1e-5:
+                        raise ValueError ('Alguna particula salió de la caja' + repr(particula))
+                
+                i += 1
+    
+        except(KeyboardInterrupt):
+            print 'interrupted!'   
             
-            if imprimir == 1:
-                print i + 1,  self.tiempo, self.particulas_y_osciladores
- 
-#Esta condición es por si algo sale mal.               
-            for particula in self.particulas:
-                if abs(particula.x) > self.reglas_colision.caja.tamano + 1e-5:
-                    raise ValueError ('Alguna particula salió de la caja' + repr(particula))
-
-
-
             
 
 def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega, reservorio):
@@ -639,7 +643,7 @@ if __name__ == '__main__':
     lista.append(particula2)
     lista.append(oscilador2)
     lista.append(particula3)
-#    np.random.seed(1)
+#    np.random.seed(211)
     frecuencia = 10.
     num_total = 5
     reservorio = Reservorio()
@@ -647,6 +651,12 @@ if __name__ == '__main__':
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
-    sim.run(50,1)    
-    plot_datos(sim, num_total, frecuencia, 0)
+
+    try:
+        sim.run(1)
+    except(KeyboardInterrupt):
+        print "Interrupted!"
+
+
+#    plot_datos(sim, num_total, frecuencia, 0)
 #print sim.eventos

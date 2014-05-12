@@ -10,16 +10,17 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+
 frecuencia = 10.
-num_total = 5
+num_total = 9
 reservorio = Reservorio()
 caja = Caja(np.float((num_total - 1.)/2.))
 lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
 reglas = ReglasColision(caja, reservorio)
 sim = Simulacion(lista, reglas)
 imprimir = 1
-steps = 500
-descartados = 10
+steps = 50000
+descartados = 1000
 
 def plot_flujos(sim,n = 100, k=1):
     
@@ -71,35 +72,44 @@ def plot_flujos(sim,n = 100, k=1):
 #    
     numero_eventos = np.arange(len(flujos[0]))
     numero_eventos2 = np.arange(len(deltaEs[j]))
-    if k == 1:
-        plt.figure()
-        for j in xrange(len(sim.particulas)):
-            plt.plot(numero_eventos[-steps/3:], flujos[j][-steps/3:],'-o')
-            plt.show()
-        
-        plt.figure()
-        for j in xrange(len(sim.particulas)):
-            plt.plot(numero_eventos2, deltaEs[j],'-o')
-            plt.show()
-        
-
-            
-    elif k == 0:
-        plt.figure()
-        for j in xrange(len(sim.particulas)):
-            plt.plot(numero_eventos, flujos[j],'-o')
+    
+#    if k == 1:
+#        plt.figure()
+#        for j in xrange(len(sim.particulas)):
+#            plt.plot(numero_eventos[-steps/3:], flujos[j][-steps/3:],'-o')
+#            plt.show()
+#        
+#        plt.figure()
+#        for j in xrange(len(sim.particulas)):
+#            plt.plot(numero_eventos2, deltaEs[j],'-o')
+#            plt.show()
+#        
+#
+#            
+#   elif k == 0:
+#        plt.figure()
+#        for j in xrange(len(sim.particulas)):
+#            plt.plot(numero_eventos, flujos[j],'-o')
 
     
-    
+
 try:
-    sim.run(steps, imprimir)
-    plot_datos(sim, num_total, frecuencia, 0)
-#    plot_flujos(sim, descartados)
+    while True:
+        sim.run(steps, imprimir)
+        plot_datos(sim, num_total, frecuencia, 0)
+        plot_flujos(sim, descartados)
+except KeyboardInterrupt:
+    print 'interrupted!'
     
-except(ValueError):
-    print "Hubo un error en alguna particula"
-    plot_datos(sim, num_total, frecuencia, 0)
-    plot_flujos(sim,0,0)
+#try:
+#    sim.run(steps, imprimir)
+#    plot_datos(sim, num_total, frecuencia, 0)
+#    plot_flujos(sim, descartados)
+#    
+#except(ValueError):
+#    print "Hubo un error en alguna particula"
+#    plot_datos(sim, num_total, frecuencia, 0)
+##    plot_flujos(sim,0,0)
     
     
 
