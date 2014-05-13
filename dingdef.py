@@ -311,7 +311,8 @@ class ReglasColision(object):
      
       elif abs(oscilador_j.fase) < 1e-10 and oscilador_j.x < oscilador_j.equilibrio :
           oscilador_j.fase = -abs(np.arcsin(a_vieja/oscilador_j.a*np.sin(oscilador_j.omega*delta_t + f_vieja)))
-         
+      
+      
       particula_i.v = v_vieja + a_vieja*w*np.cos(w*delta_t + f_vieja)  - oscilador_j.a*w*np.cos(oscilador_j.fase)
        
 
@@ -353,6 +354,7 @@ class Simulacion(object):
         self.eventos = dict()
         self.tiempo = 0
         self.t_eventos = [0.]
+        
 
 
 #Los siguientes diccionarios permitirán hacer el "ploteo" después
@@ -360,6 +362,15 @@ class Simulacion(object):
         self.registro_velocidades = dict()
         self.registro_amplitudes = dict()
         self.registro_fases = dict()
+        
+#Lo siguiente me permite calcular el flujo.        
+
+        self.flujos_promedio = [[] for _ in xrange(self.longpart)]
+        self.flujos_promedio2 = [[] for _ in xrange(self.longpart)]
+        self.velocidades_extremos = [[] for _ in xrange(2)]
+        self.flujos_reservorio =  [[] for _ in xrange(2)]
+        self.tiempos_extremos1 = []
+        self.tiempos_extremos2 = []
         
             
         
@@ -466,13 +477,18 @@ class Simulacion(object):
                     pass
         
 
-    def run(self, imprimir = 0):
+    def run(self, imprimir = 0, flujos = 0, terminar = 0, cota = 100000):
         
         
         self.registro_posiciones = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
         self.registro_velocidades = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
         self.registro_amplitudes = {"Oscilador" + str(i + 1) : [] for i in range(int(self.longosc))}
         self.registro_fases = {"Oscilador" + str(i + 1) : [] for i in range(int(self.longosc))}
+        
+        v_x = [[] for _ in xrange(self.longpart)]
+        deltaEs = [[] for _ in xrange(self.longpart)]
+        deltaEs_extremos = [[] for _ in xrange(2)]
+
 
         i = 0
         
@@ -495,11 +511,28 @@ class Simulacion(object):
         #Si se estrella contra la pared
         
                 if siguiente_evento[1] is None:
+                    if siguiente_evento[0].etiqueta == -1:
+                        a = siguiente_evento[0].v
+                    if siguiente_evento[0].etiqueta == 1:
+                        b = siguiente_evento[0].v
                     delta_t = self.reglas_colision.tiempo_colision_pared(siguiente_evento[0]) #Lo mismo que ya había hecho
                     self.tiempo = t_siguiente_evento #El tiempo que había más éste delta t"
                     self.mover_particulas_y_osciladores(delta_t) #Cambio posiciones del oscilador y las particulas
                     self.actualizar_fases(np.float(delta_t))      #Actualizo las fases de todos los ociladores.               
                     self.reglas_colision.colision_pared(siguiente_evento[0])
+                    if siguiente_evento[0].etiqueta == -1:
+                        c = siguiente_evento[0].v
+                        deltaEs_extremos[0].append((c**2 - a**2)*0.5)
+                        self.tiempos_extremos1.append(t_siguiente_evento)
+                    if siguiente_evento[0].etiqueta == 1:
+                        d = siguiente_evento[0].v
+                        deltaEs_extremos[1].append((d**2 - b**2)*0.5)
+                        self.tiempos_extremos2.append(t_siguiente_evento)
+                    
+                    
+
+
+                    
         
         # Si chocan la particula y el oscilador
            
@@ -522,8 +555,58 @@ class Simulacion(object):
                     if abs(particula.x) > self.reglas_colision.caja.tamano + 1e-5:
                         raise ValueError ('Alguna particula salió de la caja' + repr(particula))
                 
-                i += 1
+               
+                
+                if flujos == 1:
+                    
+                    
+                    
+                    for j in xrange(self.longpart):    
+                        v_x[j].append(sim.registro_velocidades["Particula" + str(j + 1)][i])
+                    
+              
+
+                    
+                    for j in xrange(self.longpart):
+                        
+                        if i == 0:
+                            deltaEs[j].append(0)
+                        else:
+#                            deltaEs[j].append(((v_x[j][i])**2. - (v_x[j][i-1])**2.)*0.5)
+                            deltaEs[j].append(abs((v_x[j][i])**2. - (v_x[j][i-1])**2.)*0.5)
+                
+#                    print [np.sum(deltaEs[j]) for j in xrange(self.longpart)]
+                    
+                    if i <= cota:
+                        if i % 1000 == 0:
+                            for j in xrange(self.longpart):
+                                self.flujos_promedio[j].append(np.sum((deltaEs[j]))/self.t_eventos[i-1])
+                    
+                    if i > cota:
+                        if i % 1000 == 0:
+                            for j in xrange(self.longpart):
+                                self.flujos_promedio2[j].append(np.sum((deltaEs[j][cota:i+1]))/(self.t_eventos[i-1]-self.t_eventos[cota]))
+                        
+
+                        
+                    
+                    if siguiente_evento[1] is None:
+                        if siguiente_evento[0].etiqueta == -1:
+                            self.flujos_reservorio[0].append(np.sum(deltaEs_extremos[0])/self.tiempos_extremos1[-1])
+                        else:
+                            self.flujos_reservorio[1].append(np.sum((deltaEs_extremos[1]))/self.tiempos_extremos2[-1])
+                    
+
     
+ 
+                    
+                
+                i += 1
+                
+                if terminar == 1:
+                    if i == 100:
+                        break
+        
         except(KeyboardInterrupt):
             print 'interrupted!'   
             
@@ -532,7 +615,26 @@ class Simulacion(object):
 def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega, reservorio):
     #    np.random.seed(seed)
     particulas_y_osciladores = []
-
+    energia = []
+    
+    for i in xrange(num_particulas_y_osciladores):
+        if i % 2 == 0:
+            if i == 0:
+                v1 = reservorio.velocidad()
+                energia.append(v1**2./2.)                
+            elif i == num_particulas_y_osciladores-1:
+                v2 = -reservorio.velocidad(1)
+                energia.append(v2**2./2.)
+            else:
+                i = np.random.random()
+                v3= random.choice([-1.,1.])*random.choice([reservorio.velocidad(),reservorio.velocidad(1)])
+                energia.append(v3**2./2.)
+        else:
+            A = np.random.randn()
+            energia.append(A**2. * omega**2.)
+     
+    norma = np.sum(energia)/num_particulas_y_osciladores        
+    energia2 = energia/norma
 
     for i in xrange(num_particulas_y_osciladores):
         #Si son partículas
@@ -540,35 +642,35 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
 #            x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
             x = -tamano_caja + i
             if i == 0:
-#                v = reservorio.velocidad()
-                v = np.sqrt(2)
-                nueva_particula = Particula_libre(x, v, -1)
-                
+                v1 = np.sqrt(energia2[i]*2)
+#                v = np.sqrt(2)
+                nueva_particula = Particula_libre(x, v1, -1)
+                energia.append(v1**2/2)                
             elif i == num_particulas_y_osciladores-1:
 #                reservorio.sentido == 1
-#                v = -reservorio.velocidad(1)
-                v = -np.sqrt(2)
-                nueva_particula = Particula_libre(x, v, 1)
+                v2 = -np.sqrt(energia2[i]*2)
+#                v = -np.sqrt(2)
+                nueva_particula = Particula_libre(x, v2, 1)
             else:
                 i = np.random.random()
-                v = random.choice([-1.,1.])*np.sqrt(2)
+                v3= random.choice([-1.,1.])*np.sqrt(energia2[i]*2)
 #                if i < 0.5:
 #                    v = random.choice([-1.,1.])*reservorio.velocidad(1)
 #                else:
 #                    v = random.choice([-1.,1.])*reservorio.velocidad()
                     
-                nueva_particula = Particula_libre(x, v)
+                nueva_particula = Particula_libre(x, v3)
                 
         else:
             x_eq = -tamano_caja + i
-            A = np.sqrt(1.)/omega
+            A = np.sqrt(energia2[i]/omega**2)
 #            A = np.random.uniform(2.*np.sqrt((0.4*(num_particulas_y_osciladores-1)*0.5- 0.6)/(num_particulas_y_osciladores-1)*0.5)/omega)
-            Fase = np.random.uniform(0,np.pi/2)
+            Fase = np.random.uniform(0.,np.pi/2)
             nueva_particula = Oscilador(x_eq,A,Fase,omega)
             
             
         particulas_y_osciladores.append(nueva_particula)
-        
+
     print particulas_y_osciladores
 
     return particulas_y_osciladores
@@ -629,6 +731,43 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
     plt.xlabel('t')
     plt.ylabel('x(t)')
     plt.show()
+    
+def plot_flujos(sim):
+#     numero_eventos = np.arange(len(sim.flujos_promedio[0]))
+#     numero_eventos2 = np.arange(len(sim.flujos_promedio2[0]))
+#
+##     for j in xrange(sim.longpart):
+##         plt.plot(numero_eventos, sim.flujos_promedio[j],'-o')
+#     plt.plot(numero_eventos, sim.flujos_promedio[0],'-o')
+#     plt.plot(numero_eventos, sim.flujos_promedio[sim.longpart - 1],'-o')
+#     
+#     plt.figure()
+#     
+#     plt.plot(numero_eventos2, sim.flujos_promedio2[0],'-o')
+#     plt.plot(numero_eventos2, sim.flujos_promedio2[sim.longpart - 1],'-o')
+#     
+#     plt.show()
+
+    numero_extremos1 = np.arange(len(sim.flujos_reservorio[0]))
+    numero_extremos2 = np.arange(len(sim.flujos_reservorio[1]))
+    
+    plt.plot(numero_extremos1, sim.flujos_reservorio[0], '-o')
+    plt.plot(numero_extremos2, sim.flujos_reservorio[1], '-o')
+    
+    plt.show()
+ 
+        
+##        plt.figure()
+##        for j in xrange(len(sim.particulas)):
+##            plt.plot(numero_eventos2, deltaEs[j],'-o')
+##            plt.show()
+##        
+##
+##            
+##   elif k == 0:
+##        plt.figure()
+##        for j in xrange(len(sim.particulas)):
+##            plt.plot(numero_eventos, flujos[j],'-o')
 
 
 if __name__ == '__main__':
@@ -651,12 +790,13 @@ if __name__ == '__main__':
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
-
-    try:
-        sim.run(1)
-    except(KeyboardInterrupt):
-        print "Interrupted!"
-
-
+try:    
+    sim.run(1,1)
 #    plot_datos(sim, num_total, frecuencia, 0)
+    plot_flujos(sim)
+except(ValueError):
+    print "Hubo un error en alguna particula"
+    plot_datos(sim, num_total, frecuencia, 0)
+    plot_flujos(sim)
+    
 #print sim.eventos
