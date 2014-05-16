@@ -793,7 +793,7 @@ if __name__ == '__main__':
     lista.append(particula3)
 #    np.random.seed(211)
     frecuencia = 10.
-    num_total = 5
+    num_total = 9
     reservorio = Reservorio()
     caja = Caja(np.float(num_total - 1.)/2. + 1.)
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
