@@ -479,7 +479,7 @@ class Simulacion(object):
                     pass
         
 
-    def run(self, imprimir = 0, flujos = 0, terminar = 0, cota = 10000):
+    def run(self, imprimir = 0, flujos = 0, terminar = 0, cota = 1000):
         
         
         self.registro_posiciones = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
@@ -605,7 +605,7 @@ class Simulacion(object):
                         
 
                         
-                    if num_eventos_pared > 2*cota: 
+                    if num_eventos_pared > 10*cota: 
 #                    if num_eventos_pared > 10*cota:                    
                         if siguiente_evento[1] is None:
                             if siguiente_evento[0].etiqueta == -1:
@@ -614,7 +614,7 @@ class Simulacion(object):
                                 self.flujos_reservorio[1].append(np.sum(deltaEs_extremos[1][cota:num_eventos_pared+1])/(self.tiempos_extremos2[-1] - self.tiempos_extremos2[cota]))                                
                         
     
-                        if num_eventos_pared > 3*cota:  
+                        if num_eventos_pared > 20*cota:  
 #                        if num_eventos_pared > 12*cota:
                             print self.flujos_reservorio[0][-1], self.flujos_reservorio[1][-1]
                     
