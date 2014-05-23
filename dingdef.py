@@ -8,7 +8,7 @@ Created on Fri Apr 18 11:38:56 2014
 import numpy as np
 import random
 from matplotlib import pyplot as plt
-
+from scipy import stats
 
 
 def sign(number):return cmp(number,0)
@@ -479,7 +479,7 @@ class Simulacion(object):
                     pass
         
 
-    def run(self, imprimir = 0, flujos = 0, terminar = 0, cota = 1000):
+    def run(self, imprimir = 0, flujos = 0, terminar = 0, cota = 500):
         
         
         self.registro_posiciones = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
@@ -614,7 +614,7 @@ class Simulacion(object):
                                 self.flujos_reservorio[1].append(np.sum(deltaEs_extremos[1][cota:num_eventos_pared+1])/(self.tiempos_extremos2[-1] - self.tiempos_extremos2[cota]))                                
                         
     
-                        if num_eventos_pared > 20*cota:  
+                        if num_eventos_pared > 15*cota:  
 #                        if num_eventos_pared > 12*cota:
                             print self.flujos_reservorio[0][-1], self.flujos_reservorio[1][-1]
                     
@@ -810,7 +810,7 @@ def plot_flujos(sim):
 
 def plot_temperaturas(sim):
      numero_total= np.arange(sim.longtodo)
-     cota2 = 10000
+     cota2 = 5000
      
      T_promedio = [np.sum(sim.Temperaturas[j][cota2:]) for j in xrange(sim.longtodo)]/(sim.t_eventos[-1] - sim.t_eventos[cota2])
 #     T_promedio = [np.mean(sim.Temperaturas[j][cota2:]) for j in xrange(sim.longtodo)]
@@ -819,13 +819,20 @@ def plot_temperaturas(sim):
          if i % 2 != 0:
              T_promedio[i] = (T_promedio[i]*100.)/2.
      
+     
      plt.figure()
      plt.plot(numero_total, T_promedio , 'o', label='Original data', markersize=5)
      
      A = np.vstack([numero_total, np.ones(len(numero_total))]).T
      m, c = np.linalg.lstsq(A, T_promedio)[0]
-     print m, c
+     slope, intercept, r_value, p_value, std_err = stats.linregress(numero_total,T_promedio)
+     print "pendiente, intercepto", m, c
+     print "slope, intercept", slope, intercept    
+     print 'r value', r_value
+     print  'p_value', p_value
+     print 'standard deviation', std_err
      plt.plot(numero_total, m*numero_total + c, 'r', label='Fitted line')
+     plt.axis([0,sim.longtodo,1.5,2.5])
      plt.ylabel(r'T')
      plt.xlabel(u'Número de partícula')
      plt.title(u'T vs. N para el estado estacionario')
