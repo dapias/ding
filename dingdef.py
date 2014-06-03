@@ -139,7 +139,6 @@ class ReglasColision(object):
   
      
    def tiempo_colision_particula_oscilador(self,particula, oscilador, tiempo_inicial = 1.e-7, tol = 1.e-10):
-       
            
         tiempo = float('inf')
 
@@ -479,16 +478,17 @@ class Simulacion(object):
                     pass
         
 
-    def run(self, imprimir = 0, flujos = 0, terminar = 0, cota = 500):
+
+    def run(self, imprimir = 0, flujos = 0, terminar = 0, cota = 5000,numero_puntos = 200):
+
         
         
         self.registro_posiciones = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
         self.registro_velocidades = {"Particula" + str(i + 1) : [] for i in range(int(self.longpart))}
         self.registro_amplitudes = {"Oscilador" + str(i + 1) : [] for i in range(int(self.longosc))}
         self.registro_fases = {"Oscilador" + str(i + 1) : [] for i in range(int(self.longosc))}
-        
-        v_x = [[] for _ in xrange(self.longpart)]
-        deltaEs = [[] for _ in xrange(self.longpart)]
+        self.cota2 = 0.
+
         deltaEs_extremos = [[] for _ in xrange(2)]
         
         
@@ -543,6 +543,9 @@ class Simulacion(object):
 
                     num_eventos_pared += 1
                     
+                    if num_eventos_pared == cota:
+                        self.cota2 = i
+                    
                     
         
         # Si chocan la particula y el oscilador
@@ -564,7 +567,7 @@ class Simulacion(object):
                 
                 
                 if imprimir == 1:
-                    print i + 1,  self.tiempo, self.particulas_y_osciladores
+                    print i + 1,  self.tiempo #self.particulas_y_osciladores
                 
         #Esta condición es por si algo sale mal.               
                 for particula in self.particulas:
@@ -575,46 +578,19 @@ class Simulacion(object):
                 
                 if flujos == 1:
                     
-                    
-                    
-                    for j in xrange(self.longpart):    
-                        v_x[j].append(sim.registro_velocidades["Particula" + str(j + 1)][i])
-                    
-              
-
-                    
-                    for j in xrange(self.longpart):
-                        
-                        if i == 0:
-                            deltaEs[j].append(0)
-                        else:
-#                            deltaEs[j].append(((v_x[j][i])**2. - (v_x[j][i-1])**2.)*0.5)
-                            deltaEs[j].append(abs((v_x[j][i])**2. - (v_x[j][i-1])**2.)*0.5)
-                
-#                    print [np.sum(deltaEs[j]) for j in xrange(self.longpart)]
-                    
-                    if i <= cota:
-                        if i % 1000 == 0:
-                            for j in xrange(self.longpart):
-                                self.flujos_promedio[j].append(np.sum((deltaEs[j]))/self.t_eventos[i-1])
-                    
-                    if i > cota:
-                        if i % 1000 == 0:
-                            for j in xrange(self.longpart):
-                                self.flujos_promedio2[j].append(np.sum((deltaEs[j][cota:i+1]))/(self.t_eventos[i-1]-self.t_eventos[cota]))
-                        
-
-                        
-                    if num_eventos_pared > 10*cota: 
-#                    if num_eventos_pared > 10*cota:                    
+                    if num_eventos_pared > cota*5: 
                         if siguiente_evento[1] is None:
                             if siguiente_evento[0].etiqueta == -1:
-                                self.flujos_reservorio[0].append(np.sum(deltaEs_extremos[0][cota:num_eventos_pared+1])/(self.tiempos_extremos1[-1] - self.tiempos_extremos1[cota]))
+                                self.flujos_reservorio[0].append(np.sum(deltaEs_extremos[0][cota:])/(self.tiempos_extremos1[-1] - self.tiempos_extremos1[cota]))
                             else:
-                                self.flujos_reservorio[1].append(np.sum(deltaEs_extremos[1][cota:num_eventos_pared+1])/(self.tiempos_extremos2[-1] - self.tiempos_extremos2[cota]))                                
+                                self.flujos_reservorio[1].append(np.sum(deltaEs_extremos[1][cota:])/(self.tiempos_extremos2[-1] - self.tiempos_extremos2[cota]))                                
                         
     
+<<<<<<< HEAD
                         if num_eventos_pared > 15*cota:  
+=======
+                        if num_eventos_pared > 6*cota:  
+>>>>>>> c9d2da8856f314f7e48cbe6a2408c25d8a6f7fa3
 #                        if num_eventos_pared > 12*cota:
                             print self.flujos_reservorio[0][-1], self.flujos_reservorio[1][-1]
                     
@@ -626,28 +602,23 @@ class Simulacion(object):
                 i += 1
                 
                 if terminar == 1:
-                    if i == 200:
+                    if i == numero_puntos:
                         break
         
         except(KeyboardInterrupt):
             print 'interrupted!'
             print 'promedio y desviación estándar lado izquierdo', np.average(self.flujos_reservorio[0]), np.std(self.flujos_reservorio[0])
             print 'promedio y desviación estándar lado derecho', np.average(self.flujos_reservorio[1]), np.std(self.flujos_reservorio[1])
-            print 'temperaturas promedio', [np.sum(self.Temperaturas[j][cota:]) for j in xrange(self.longtodo)]/(self.t_eventos[-1] - self.t_eventos[cota])
+            
             
     
     
     def temperatura(self,particula,delta_t):
         try:
-#            return abs(particula.v)
             return particula.v**2.*delta_t
         except(AttributeError):
-            return particula.a**2.*delta_t
-#            return particula.a**2*particula.omega**2/2.
-#            return particula.a**2*particula.omega/4.*(np.sin(2*(particula.omega*delta_t + particula.fase))-np.sin(2*particula.fase) + 2*particula.omega*delta_t)
-    
-            
-            
+            return particula.a**2.*delta_t*particula.omega**2./2.
+
             
             
 
@@ -678,52 +649,30 @@ def crear_particulas_aleatorias(tamano_caja, num_particulas_y_osciladores, omega
     for i in xrange(num_particulas_y_osciladores):
         #Si son partículas
         if i % 2 == 0:
-#            x = -tamano_caja + (2.*tamano_caja)*(i+1.)/(num_particulas_y_osciladores+1.)
             x = -(tamano_caja-1) + i + np.random.uniform(-0.5,0.5)
             if i == 0:
                 v1 = np.sqrt(energia2[i]*2)
-#                v = np.sqrt(2)
                 nueva_particula = Particula_libre(x, v1, -1)
                 energia.append(v1**2/2)                
             elif i == num_particulas_y_osciladores-1:
-#                reservorio.sentido == 1
                 v2 = -np.sqrt(energia2[i]*2)
-#                v = -np.sqrt(2)
+
                 nueva_particula = Particula_libre(x, v2, 1)
             else:
                 i = np.random.random()
                 v3= random.choice([-1.,1.])*np.sqrt(energia2[i]*2)
-#                if i < 0.5:
-#                    v = random.choice([-1.,1.])*reservorio.velocidad(1)
-#                else:
-#                    v = random.choice([-1.,1.])*reservorio.velocidad()
-                    
                 nueva_particula = Particula_libre(x, v3)
                 
         else:
             x_eq = -(tamano_caja -1.)+ i
-            A = np.sqrt(energia2[i]/omega**2)
-#            A = np.random.uniform(2.*np.sqrt((0.4*(num_particulas_y_osciladores-1)*0.5- 0.6)/(num_particulas_y_osciladores-1)*0.5)/omega)
-            Fase = np.random.uniform(0.,np.pi/2)
+            A = np.sqrt(energia2[i]/omega**2.) % 0.5 
+            Fase = np.random.uniform(0.,np.pi/2.)
             nueva_particula = Oscilador(x_eq,A,Fase,omega)
             
             
         particulas_y_osciladores.append(nueva_particula)
     
-    Temperatura = []
-    
-    for j in xrange(len(particulas_y_osciladores)):
-        try:
-            Temperatura.append(particulas_y_osciladores[j].v**2)
-        except:
-            Temperatura.append(particulas_y_osciladores[j].a**2.*particulas_y_osciladores[j].omega**2./2.)
-        
-        
-        
-    
-    
     print particulas_y_osciladores
-    print "Temperatura inicial", Temperatura
     return particulas_y_osciladores
 
 
@@ -760,7 +709,6 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
 
     for i in xrange(len(sim.t_eventos) - 1):
     
-        
         while  t < float(sim.t_eventos[i + 1]):
             
             for j in xrange(int(num_particulas)):
@@ -784,21 +732,6 @@ def plot_datos(sim, total_particulas, omega, puntos = 1):
     plt.show()
     
 def plot_flujos(sim):
-#     numero_eventos = np.arange(len(sim.flujos_promedio[0]))
-#     numero_eventos2 = np.arange(len(sim.flujos_promedio2[0]))
-#
-##     for j in xrange(sim.longpart):
-##         plt.plot(numero_eventos, sim.flujos_promedio[j],'-o')
-#     plt.plot(numero_eventos, sim.flujos_promedio[0],'-o')
-#     plt.plot(numero_eventos, sim.flujos_promedio[sim.longpart - 1],'-o')
-#     
-#     plt.figure()
-#     
-#     plt.plot(numero_eventos2, sim.flujos_promedio2[0],'-o')
-#     plt.plot(numero_eventos2, sim.flujos_promedio2[sim.longpart - 1],'-o')
-#     
-#     plt.show()
-
     numero_extremos1 = np.arange(len(sim.flujos_reservorio[0]))
     numero_extremos2 = np.arange(len(sim.flujos_reservorio[1]))
     
@@ -810,32 +743,30 @@ def plot_flujos(sim):
 
 def plot_temperaturas(sim):
      numero_total= np.arange(sim.longtodo)
-     cota2 = 5000
+     cota2 = sim.cota2
+     print "cota2", cota2
      
      T_promedio = [np.sum(sim.Temperaturas[j][cota2:]) for j in xrange(sim.longtodo)]/(sim.t_eventos[-1] - sim.t_eventos[cota2])
-#     T_promedio = [np.mean(sim.Temperaturas[j][cota2:]) for j in xrange(sim.longtodo)]
-     
-     for i in xrange(sim.longtodo):
-         if i % 2 != 0:
-             T_promedio[i] = (T_promedio[i]*100.)/2.
-     
-     
+     print 'temperaturas promedio', T_promedio
      plt.figure()
-     plt.plot(numero_total, T_promedio , 'o', label='Original data', markersize=5)
+     plt.plot(numero_total, T_promedio , 'o', label='Datos', markersize=10)
      
      A = np.vstack([numero_total, np.ones(len(numero_total))]).T
      m, c = np.linalg.lstsq(A, T_promedio)[0]
-     slope, intercept, r_value, p_value, std_err = stats.linregress(numero_total,T_promedio)
-     print "pendiente, intercepto", m, c
-     print "slope, intercept", slope, intercept    
-     print 'r value', r_value
-     print  'p_value', p_value
-     print 'standard deviation', std_err
-     plt.plot(numero_total, m*numero_total + c, 'r', label='Fitted line')
+     
+     print "pendiente", m
+     
+     resids = T_promedio - np.dot(A,a)       # e = y - Xa; 
+     RSS = sum(resids**2)           # residual sum of squares
+     TSS = sum((T_promedio - np.mean(T_promedio))**2) # total sum of squares
+     R2 = 1 - RSS/TSS
+     print "R^2", R2
+     
+     plt.plot(numero_total, m*numero_total + c, 'r', label='Ajuste')
      plt.axis([0,sim.longtodo,1.5,2.5])
      plt.ylabel(r'T')
      plt.xlabel(u'Número de partícula')
-     plt.title(u'T vs. N para el estado estacionario')
+#     plt.title(u'T vs. N para el estado estacionario')
      plt.legend()
      plt.show()
      
@@ -854,22 +785,22 @@ if __name__ == '__main__':
     lista.append(oscilador2)
     lista.append(particula3)
 #    np.random.seed(211)
-    frecuencia = 10.
-    num_total = 9
+    frecuencia = 1.
+    num_total = 7
     reservorio = Reservorio()
     caja = Caja(np.float(num_total - 1.)/2. + 1.)
     lista = crear_particulas_aleatorias(caja.tamano,num_total,frecuencia,reservorio)
     reglas = ReglasColision(caja, reservorio)
     sim = Simulacion(lista, reglas)
-try:    
-    sim.run(0,1)
-#    plot_datos(sim, num_total, frecuencia, 0)
-    plot_temperaturas(sim)
-#    plot_flujos(sim)
-except(ValueError):
-    print "Hubo un error en alguna particula"
-    plot_datos(sim, num_total, frecuencia, 0)
-    plot_temperaturas(sim)
-    plot_flujos(sim)
+    try:    
+        sim.run(1,0,1)
+        plot_datos(sim, num_total, frecuencia, 0)
+#        plot_temperaturas(sim)
+#        plot_flujos(sim)
+    except(ValueError):
+        print "Hubo un error en alguna particula"
+        plot_datos(sim, num_total, frecuencia, 0)
+        plot_temperaturas(sim)
+        plot_flujos(sim)
     
 #print sim.eventos
